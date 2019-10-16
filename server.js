@@ -1,10 +1,33 @@
 const express = require("express");
+const session = require("express-session");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const crypt = require("bcrypt");
 var mysql = require("mysql");
 
 const app = express();
 const port = 3002;
+
+var corsOptions = {
+  origin: "localhost",
+  optionSuccessStatus: 200
+};
+
 app.use(bodyParser.json());
+app.use(cookieParser());
+app.use(cors(corsOptions));
+app.use(
+  session({
+    secret: "YellowPancakeHut",
+    saveUninitialized: true,
+    resave: true,
+    cookie: {
+      httpOnly: false,
+      secure: false
+    }
+  })
+);
 
 var conn = mysql.createConnection({
   host: "localhost",
@@ -42,8 +65,53 @@ getMembers = (classID, res) => {
 
   conn.end();
 };
+getUserInfo = (username, password, req, res) => {
+  let query = `
+    SELECT 
+    ssdb.membership.member_id,
+      ssdb.membership.class_id,
+      ssdb.auth.password
+  FROM 
+    ssdb.membership 
+  INNER JOIN
+    ssdb.auth
+  ON
+    ssdb.auth.member_id=ssdb.membership.member_id
+  WHERE 
+    ssdb.auth.username = ? 
+    `;
 
-getUserInfo = (memberID, res) => {
+  conn.connect();
+
+  conn.query(query, [username], (error, results, fields) => {
+    const options = {
+      secure: false,
+      httpOnly: false,
+      domain: "localhost"
+    };
+
+    crypt.compare(password, results[0].password, (err, resp) => {
+      if (resp) {
+        req.session.memberID = results[0].member_id;
+        req.session.classID = results[0].class_id;
+        res
+          .cookie(
+            "member",
+            { id: results[0].member_id, classID: results[0].class_id },
+            options
+          )
+          .status(200)
+          .send("success");
+      } else {
+        res.send("fail");
+      }
+    });
+  });
+
+  conn.end();
+};
+
+getMemberInfo = (memberID, res) => {
   let query2 =
     `SELECT ssdb.attendance.date, ssdb.attendance.status, ssdb.attendance.study FROM ssdb.attendance where ssdb.attendance.member_id=` +
     memberID +
@@ -101,6 +169,29 @@ addMember = (fname, lname, address, phone, email, res) => {
   conn.end();
 };
 
+addUser = (username, password, member_id, res) => {
+  crypt.hash(password, 10, (err, hash) => {
+    let post = {
+      username: username,
+      password: hash,
+      member_id: member_id
+    };
+
+    conn.connect();
+
+    conn.query(
+      "INSERT INTO ssdb.auth SET ?",
+      post,
+      (error, results, fields) => {
+        if (error) throw error;
+        console.log(results.affectedRows + " row(s) inserted");
+      }
+    );
+
+    conn.end();
+  });
+};
+
 addAttendanceRecord = (memberID, classID, status, study, res) => {
   let post = {
     member_id: memberID,
@@ -123,13 +214,26 @@ addAttendanceRecord = (memberID, classID, status, study, res) => {
   conn.end();
 };
 
-app.get("/", (req, res) => res.send("Hello World!"));
+sessionChecker = (req, res, next) => {
+  if (req.session.user && req.cookies.member.id) {
+    res.send(true);
+  } else {
+    next();
+  }
+};
+
+app.get("/", sessionChecker, (req, res) => {
+  res.send(false);
+});
+
 app.get("/members", (req, res) => {
   getMembers(1, res);
 });
+
 app.get("/memberinfo", (req, res) => {
-  getUserInfo(1, res);
+  getMemberInfo(1, res);
 });
+
 app.post("/addmember", (req, res) => {
   addMember(
     req.body.fname,
@@ -139,6 +243,7 @@ app.post("/addmember", (req, res) => {
     req.body.email
   );
 });
+
 app.post("/addrecord", (req, res) => {
   addAttendanceRecord(
     req.body.memberID,
@@ -147,6 +252,13 @@ app.post("/addrecord", (req, res) => {
     req.body.study,
     res
   );
+});
+app.post("/adduser", (req, res) => {
+  addUser(req.body.username, req.body.password, req.body.member_id, res);
+});
+
+app.get("/login", (req, res) => {
+  getUserInfo(req.body.username, req.body.password, req, res);
 });
 
 app.listen(port, () => console.log(`SSDB app listening on port ${port}!`));
