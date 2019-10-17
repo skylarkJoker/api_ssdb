@@ -10,8 +10,9 @@ const app = express();
 const port = 3002;
 
 var corsOptions = {
-  origin: "localhost",
-  optionSuccessStatus: 200
+  origin: "http://localhost:3000",
+  optionSuccessStatus: 200,
+  credentials: true
 };
 
 app.use(bodyParser.json());
@@ -65,6 +66,7 @@ getMembers = (classID, res) => {
 
   conn.end();
 };
+
 getUserInfo = (username, password, req, res) => {
   let query = `
     SELECT 
@@ -81,8 +83,6 @@ getUserInfo = (username, password, req, res) => {
     ssdb.auth.username = ? 
     `;
 
-  conn.connect();
-
   conn.query(query, [username], (error, results, fields) => {
     const options = {
       secure: false,
@@ -90,25 +90,27 @@ getUserInfo = (username, password, req, res) => {
       domain: "localhost"
     };
 
-    crypt.compare(password, results[0].password, (err, resp) => {
-      if (resp) {
-        req.session.memberID = results[0].member_id;
-        req.session.classID = results[0].class_id;
-        res
-          .cookie(
-            "member",
-            { id: results[0].member_id, classID: results[0].class_id },
-            options
-          )
-          .status(200)
-          .send("success");
-      } else {
-        res.send("fail");
-      }
-    });
+    if (results && results.length) {
+      crypt.compare(password, results[0].password, (err, resp) => {
+        if (resp) {
+          req.session.memberID = results[0].member_id;
+          req.session.classID = results[0].class_id;
+          res
+            .cookie(
+              "member",
+              { id: results[0].member_id, classID: results[0].class_id },
+              options
+            )
+            .status(200)
+            .send("success");
+        } else {
+          res.send("fail");
+        }
+      });
+    } else {
+      res.send("fail");
+    }
   });
-
-  conn.end();
 };
 
 getMemberInfo = (memberID, res) => {
@@ -141,6 +143,28 @@ getMemberInfo = (memberID, res) => {
     resultSet = results[0];
     resultSet[0]["attendance"] = results[1];
     res.send(resultSet);
+  });
+
+  conn.end();
+};
+
+getClassInfo = (classID, res) => {
+  let query =
+    `
+    SELECT
+      *
+    FROM
+    ssdb.sbclass 
+   WHERE 
+       ssdb.sbclass.class_num = ` +
+    classID +
+    ` 
+    `;
+
+  conn.connect();
+
+  conn.query(query, (error, results, fields) => {
+    res.send(results);
   });
 
   conn.end();
@@ -227,11 +251,15 @@ app.get("/", sessionChecker, (req, res) => {
 });
 
 app.get("/members", (req, res) => {
-  getMembers(1, res);
+  getMembers(req.body.classID, res);
 });
 
 app.get("/memberinfo", (req, res) => {
-  getMemberInfo(1, res);
+  getMemberInfo(req.body.memberID, res);
+});
+
+app.get("/classinfo", (req, res) => {
+  getClassInfo(req.body.classID, res);
 });
 
 app.post("/addmember", (req, res) => {
@@ -253,12 +281,22 @@ app.post("/addrecord", (req, res) => {
     res
   );
 });
+
 app.post("/adduser", (req, res) => {
   addUser(req.body.username, req.body.password, req.body.member_id, res);
 });
 
-app.get("/login", (req, res) => {
+app.post("/login", (req, res) => {
   getUserInfo(req.body.username, req.body.password, req, res);
+});
+
+app.get("/logout", (req, res) => {
+  if (res.session.user && req.cookies.member.id) {
+    res.clearCookie("member");
+    res.send("success");
+  } else {
+    res.send("fail");
+  }
 });
 
 app.listen(port, () => console.log(`SSDB app listening on port ${port}!`));
