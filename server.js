@@ -86,8 +86,8 @@ getUserInfo = (username, password, req, res) => {
   conn.query(query, [username], (error, results, fields) => {
     const options = {
       secure: false,
-      httpOnly: false,
-      domain: "localhost"
+      httpOnly: false
+      // domain: "localhost"
     };
 
     if (results && results.length) {
@@ -124,7 +124,7 @@ getMemberInfo = (memberID, res) => {
     ssdb.member.id,
     ssdb.member.first_name,
     ssdb.member.last_name,
-    ssdb.member.address,
+    ssdb.member.address ,
     ssdb.member.phone_home,
     ssdb.member.email
    FROM
@@ -151,26 +151,62 @@ getMemberInfo = (memberID, res) => {
 getClassInfo = (classID, res) => {
   let query =
     `
-    SELECT
-      *
-    FROM
-    ssdb.sbclass 
+    SELECT 
+    ssdb.sbclass.name,
+    ssdb.sbclass.division,
+    concat_ws("", teacher.first_name, " ", teacher.last_name) as tname,
+    concat_ws("", secretary.first_name, " ", teacher.last_name) as sname,
+    concat_ws("", care.first_name, " ", care.last_name) as cname
+   
+   FROM
+     ssdb.sbclass
+   INNER JOIN 
+     ssdb.member as teacher
+   ON
+     ssdb.sbclass.teacher=teacher.id
+   INNER JOIN 
+     ssdb.member as secretary
+   ON
+     ssdb.sbclass.secretary=secretary.id
+   INNER JOIN 
+     ssdb.member as care
+   ON
+     ssdb.sbclass.care_coordinator=care.id
    WHERE 
-       ssdb.sbclass.class_num = ` +
+     ssdb.sbclass.class_num=
+        
+    ` +
     classID +
     ` 
     `;
-
-  conn.connect();
-
-  conn.query(query, (error, results, fields) => {
-    res.send(results);
+  let query2 =
+    `
+    SELECT
+    ssdb.member.id,
+    concat_ws("", ssdb.member.first_name, " ", ssdb.member.last_name) as mname,
+      ssdb.member.address
+  FROM
+    ssdb.membership
+  INNER JOIN
+    ssdb.member
+  ON
+    ssdb.membership.member_id=ssdb.member.id
+  WHERE
+    ssdb.membership.class_id=
+        
+    ` +
+    classID +
+    ` 
+    `;
+  var resultSet = [];
+  conn.query(query + ";" + query2, (error, results, fields) => {
+    resultSet = results[0];
+    resultSet[0]["members"] = results[1];
+    res.send(resultSet);
   });
-
-  conn.end();
 };
 
-addMember = (fname, lname, address, phone, email, res) => {
+addMember = (fname, lname, address, phone, email, req, res) => {
   let post = {
     first_name: fname,
     last_name: lname,
@@ -179,18 +215,22 @@ addMember = (fname, lname, address, phone, email, res) => {
     email: email
   };
 
-  conn.connect();
-
   conn.query(
     "INSERT INTO ssdb.member SET ?",
     post,
     (error, results, fields) => {
       if (error) throw error;
+      conn.query(
+        "INSERT INTO ssdb.membership SET ?",
+        { member_id: results.insertID, class_id: req.cookies.member.classID },
+        (err, r, f) => {
+          console.log(r.affectedRows + " row(s) inserted");
+        }
+      );
       console.log(results.affectedRows + " row(s) inserted");
+      res.send("new member created");
     }
   );
-
-  conn.end();
 };
 
 addUser = (username, password, member_id, res) => {
@@ -250,15 +290,15 @@ app.get("/", sessionChecker, (req, res) => {
   res.send(false);
 });
 
-app.get("/members", (req, res) => {
+app.post("/members", (req, res) => {
   getMembers(req.body.classID, res);
 });
 
-app.get("/memberinfo", (req, res) => {
+app.post("/memberinfo", (req, res) => {
   getMemberInfo(req.body.memberID, res);
 });
 
-app.get("/classinfo", (req, res) => {
+app.post("/classinfo", (req, res) => {
   getClassInfo(req.body.classID, res);
 });
 
@@ -268,7 +308,9 @@ app.post("/addmember", (req, res) => {
     req.body.lname,
     req.body.address,
     req.body.phone,
-    req.body.email
+    req.body.email,
+    req,
+    res
   );
 });
 
