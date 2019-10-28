@@ -175,7 +175,8 @@ getClassInfo = (classID, res) => {
     `
     SELECT
     ssdb.member.id,
-    concat_ws("", ssdb.member.first_name, " ", ssdb.member.last_name) as mname,
+    ssdb.member.first_name,
+    ssdb.member.last_name,
       ssdb.member.address
   FROM
     ssdb.membership
