@@ -10,7 +10,7 @@ const app = express();
 const port = 3002;
 
 var corsOptions = {
-  origin: "http://localhost:3000",
+  // origin: "http://localhost:3000",
   optionSuccessStatus: 200,
   credentials: true
 };
@@ -58,13 +58,9 @@ getMembers = (classID, res) => {
     ` 
     `;
 
-  conn.connect();
-
   conn.query(query, (error, results, fields) => {
     res.send(results);
   });
-
-  conn.end();
 };
 
 getUserInfo = (username, password, req, res) => {
@@ -137,15 +133,11 @@ getMemberInfo = (memberID, res) => {
 
   var resultSet = [];
 
-  conn.connect();
-
   conn.query(query + ";" + query2, (error, results, fields) => {
     resultSet = results[0];
     resultSet[0]["attendance"] = results[1];
     res.send(resultSet);
   });
-
-  conn.end();
 };
 
 getClassInfo = (classID, res) => {
@@ -241,8 +233,6 @@ addUser = (username, password, member_id, res) => {
       member_id: member_id
     };
 
-    conn.connect();
-
     conn.query(
       "INSERT INTO ssdb.auth SET ?",
       post,
@@ -251,8 +241,6 @@ addUser = (username, password, member_id, res) => {
         console.log(results.affectedRows + " row(s) inserted");
       }
     );
-
-    conn.end();
   });
 };
 
@@ -264,8 +252,6 @@ addAttendanceRecord = (memberID, classID, status, study, res) => {
     study: study
   };
 
-  conn.connect();
-
   conn.query(
     "INSERT INTO ssdb.attendance SET ?",
     post,
@@ -274,8 +260,31 @@ addAttendanceRecord = (memberID, classID, status, study, res) => {
       res.send(results.affectedRows + " row(s) inserted");
     }
   );
+};
 
-  conn.end();
+addAttendanceRecords = (members, req, res) => {
+  let post = [];
+  members.forEach(member => {
+    post.push([
+      member.id,
+      req.cookies.member.classID,
+      member.status,
+      member.studied
+    ]);
+  });
+
+  console.log(post);
+
+  var query = conn.query(
+    "INSERT INTO ssdb.attendance (member_id, class_id, status, study) VALUES ?",
+    [post],
+    (error, results, fields) => {
+      if (error) throw error;
+      res.send(results.affectedRows + " row(s) inserted");
+    }
+  );
+
+  console.log(query.sql);
 };
 
 sessionChecker = (req, res, next) => {
@@ -324,6 +333,10 @@ app.post("/addrecord", (req, res) => {
   );
 });
 
+app.post("/addrecords", (req, res) => {
+  addAttendanceRecords(req.body.members, req, res);
+});
+
 app.post("/adduser", (req, res) => {
   addUser(req.body.username, req.body.password, req.body.member_id, res);
 });
@@ -336,6 +349,7 @@ app.get("/logout", (req, res) => {
   if (res.session.user && req.cookies.member.id) {
     res.clearCookie("member");
     res.send("success");
+    conn.end();
   } else {
     res.send("fail");
   }
