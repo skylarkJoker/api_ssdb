@@ -111,7 +111,7 @@ getUserInfo = (username, password, req, res) => {
 
 getMemberInfo = (memberID, res) => {
   let query2 =
-    `SELECT ssdb.attendance.date, ssdb.attendance.status, ssdb.attendance.study FROM ssdb.attendance where ssdb.attendance.member_id=` +
+    `SELECT ssdb.attendance.id, ssdb.attendance.date, ssdb.attendance.status, ssdb.attendance.study FROM ssdb.attendance where ssdb.attendance.member_id=` +
     memberID +
     ``;
   let query =
@@ -213,13 +213,16 @@ addMember = (fname, lname, address, phone, email, req, res) => {
     post,
     (error, results, fields) => {
       if (error) throw error;
-      conn.query(
-        "INSERT INTO ssdb.membership SET ?",
-        { member_id: results.insertID, class_id: req.cookies.member.classID },
-        (err, r, f) => {
-          console.log(r.affectedRows + " row(s) inserted");
-        }
-      );
+      post = {
+        member_id: results.insertId,
+        class_id: req.cookies.member.classID
+      };
+
+      conn.query("INSERT INTO ssdb.membership SET ?", post, (err, r, f) => {
+        if (err) {
+          console.log(err);
+        } else console.log(r.affectedRows + " row(s) inserted");
+      });
       console.log(results.affectedRows + " row(s) inserted");
       res.send("new member created");
     }
