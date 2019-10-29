@@ -25,3 +25,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+db/data_attn.csv
+db/data_auth.csv
+db/data_class.csv
+db/data_m.csv
+db/data_msh.csv
+db/members.csv
+db/SSDB_complete.sql
