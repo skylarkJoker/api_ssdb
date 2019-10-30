@@ -38,7 +38,7 @@ var conn = mysql.createConnection({
   multipleStatements: true
 });
 
-getMembers = (classID, res) => {
+readClassMembers = (class_id, res) => {
   let query =
     `
     SELECT
@@ -54,7 +54,7 @@ getMembers = (classID, res) => {
        ssdb.membership ON ssdb.membership.member_id=ssdb.member.id
    WHERE 
        ssdb.membership.class_id = ` +
-    classID +
+    class_id +
     ` 
     `;
 
@@ -63,7 +63,52 @@ getMembers = (classID, res) => {
   });
 };
 
-getUserInfo = (username, password, req, res) => {
+updateMembership = (member_id, class_id, res) => {
+  let query = `
+  UPDATE
+	  ssdb.membership
+  SET
+	  ssdb.membership.class_id = ?
+  WHERE 
+	  ssdb.membership.member_id = ?; 
+ `;
+  conn.query(query, [member_id, class_id], (err, r, f) => {
+    if (err) {
+      res.send(false);
+      throw err;
+    }
+    res.send(true);
+  });
+};
+
+readMembersNoClass = (church_id, res) => {
+  let query =
+    `
+    SELECT
+    ssdb.member.id,
+    ssdb.member.first_name,
+    ssdb.member.last_name,
+    ssdb.member.address,
+    ssdb.member.phone_home,
+    ssdb.member.email
+   FROM
+    ssdb.member 
+   INNER JOIN
+       ssdb.membership ON ssdb.membership.member_id=ssdb.member.id
+   WHERE 
+       ssdb.membership.church_id = ` +
+    church_id +
+    ` 
+  AND
+    ssdb.membership.class_id = NULL
+    `;
+
+  conn.query(query, (error, results, fields) => {
+    res.send(results);
+  });
+};
+
+authenticate = (username, password, req, res) => {
   let query = `
     SELECT 
     ssdb.membership.member_id,
@@ -109,7 +154,45 @@ getUserInfo = (username, password, req, res) => {
   });
 };
 
-getMemberInfo = (memberID, res) => {
+createMember = (
+  first_name,
+  last_name,
+  address,
+  phone_home,
+  email,
+  req,
+  res
+) => {
+  let post = {
+    first_name: first_name,
+    last_name: last_name,
+    address: address,
+    phone_home: phone_home,
+    email: email
+  };
+
+  conn.query(
+    "INSERT INTO ssdb.member SET ?",
+    post,
+    (error, results, fields) => {
+      if (error) throw error;
+      post = {
+        member_id: results.insertId,
+        class_id: req.cookies.member.classID
+      };
+
+      conn.query("INSERT INTO ssdb.membership SET ?", post, (err, r, f) => {
+        if (err) {
+          console.log(err);
+        } else console.log(r.affectedRows + " row(s) inserted");
+      });
+      console.log(results.affectedRows + " row(s) inserted");
+      res.send("new member created");
+    }
+  );
+};
+
+readMember = (member_id, res) => {
   let query2 =
     `SELECT ssdb.attendance.id, ssdb.attendance.date, ssdb.attendance.status, ssdb.attendance.study FROM ssdb.attendance where ssdb.attendance.member_id=` +
     memberID +
@@ -127,7 +210,7 @@ getMemberInfo = (memberID, res) => {
     ssdb.member 
    WHERE 
        ssdb.member.id = ` +
-    memberID +
+    member_id +
     ` 
     `;
 
@@ -140,7 +223,93 @@ getMemberInfo = (memberID, res) => {
   });
 };
 
-getClassInfo = (classID, res) => {
+updateMember = (member, res) => {
+  let query = `
+  UPDATE
+	  ssdb.member
+  SET
+	  ssdb.member.first_name =  ?,
+    ssdb.member.last_name = ?,
+    ssdb.member.address = ?,
+    ssdb.member.phone_home = ?,
+    ssdb.member.email = ?
+  WHERE 
+	  ssdb.member.id = ?;  
+  `;
+  let post = [
+    member.first_name,
+    member.last_name,
+    member.address,
+    member.phone_home,
+    member.email,
+    member.id
+  ];
+
+  conn.query(query, post, (err, results, fields) => {
+    if (err) {
+      console.log(err);
+      res.send(false);
+    }
+    res.send(true);
+  });
+};
+
+deleteMember = (member_id, res) => {
+  let query = `
+    UPDATE
+      ssdb.membership
+    SET
+      ssdb.membership.class_id = NULL
+    WHERE
+      ssdb.membership.member_id = ?
+  `;
+
+  conn.query(query, [member_id], (err, result, fields) => {
+    if (err) {
+      console.log(err);
+
+      res.send(false);
+    }
+    res.send(true);
+  });
+};
+
+createClass = (name, division, church_id, res) => {
+  let post = {
+    name: name,
+    division: division
+  };
+
+  conn.query(
+    "INSERT INTO ssdb.sbclass SET ?",
+    post,
+    (error, results, fields) => {
+      if (error) {
+        res.send(false);
+        throw error;
+      }
+      post = {
+        class_id: results.insertId,
+        church_id: church_id
+      };
+
+      conn.query("INSERT INTO ssdb.church_class SET ?", post, (err, r, f) => {
+        if (err) {
+          conn.query(
+            "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?",
+            [results.insertId],
+            (err2, r2, f2) => {}
+          );
+          console.log(err);
+          res.send(false);
+        }
+        res.send(true);
+      });
+    }
+  );
+};
+
+readClassInfo = (class_id, res) => {
   let query =
     `
     SELECT 
@@ -168,7 +337,7 @@ getClassInfo = (classID, res) => {
      ssdb.sbclass.class_num=
         
     ` +
-    classID +
+    class_id +
     ` 
     `;
   let query2 =
@@ -199,34 +368,47 @@ getClassInfo = (classID, res) => {
   });
 };
 
-addMember = (fname, lname, address, phone, email, req, res) => {
-  let post = {
-    first_name: fname,
-    last_name: lname,
-    address: address,
-    phone_home: phone,
-    email: email
-  };
+updateClass = (sbclass, res) => {
+  let query = `
+  UPDATE
+    ssdb.sbclass
+  SET
+	  ssdb.sbclass.name = ?,
+    ssdb.sbclass.division = ?,
+	  ssdb.sbclass.teacher = ?,
+    ssdb.sbclass.care_coordinator = ?,
+    ssdb.sbclass.secretary = ?
+  WHERE
+	  ssdb.sbclass.class_num = ?;
+  `;
 
-  conn.query(
-    "INSERT INTO ssdb.member SET ?",
-    post,
-    (error, results, fields) => {
-      if (error) throw error;
-      post = {
-        member_id: results.insertId,
-        class_id: req.cookies.member.classID
-      };
+  let post = [
+    sbclass.name,
+    sbclass.division,
+    sbclass.teacher,
+    sbclass.care_coordinator,
+    sbclass.secretary,
+    sbclass.class_num
+  ];
 
-      conn.query("INSERT INTO ssdb.membership SET ?", post, (err, r, f) => {
-        if (err) {
-          console.log(err);
-        } else console.log(r.affectedRows + " row(s) inserted");
-      });
-      console.log(results.affectedRows + " row(s) inserted");
-      res.send("new member created");
+  conn.query(query, post, (err, r, f) => {
+    if (err) {
+      res.send(false);
+      throw err;
     }
-  );
+    res.send(true);
+  });
+};
+
+deleteClass = (class_id, res) => {
+  let query = "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?";
+  conn.query(query, [class_id], (err, r, f) => {
+    if (err) {
+      res.send(false);
+      throw err;
+    }
+    res.send(true);
+  });
 };
 
 addUser = (username, password, member_id, res) => {
@@ -246,24 +428,6 @@ addUser = (username, password, member_id, res) => {
       }
     );
   });
-};
-
-addAttendanceRecord = (memberID, classID, status, study, res) => {
-  let post = {
-    member_id: memberID,
-    class_id: classID,
-    status: status,
-    study: study
-  };
-
-  conn.query(
-    "INSERT INTO ssdb.attendance SET ?",
-    post,
-    (error, results, fields) => {
-      if (error) throw error;
-      res.send(results.affectedRows + " row(s) inserted");
-    }
-  );
 };
 
 addAttendanceRecords = (members, req, res) => {
@@ -293,9 +457,9 @@ addAttendanceRecords = (members, req, res) => {
 
 sessionChecker = (req, res, next) => {
   if (req.session.user && req.cookies.member.id) {
-    res.send(true);
-  } else {
     next();
+  } else {
+    res.send(false);
   }
 };
 
@@ -303,60 +467,73 @@ app.get("/", sessionChecker, (req, res) => {
   res.send(false);
 });
 
-app.post("/members", (req, res) => {
-  getMembers(req.body.classID, res);
+app.post("/classmembers", sessionChecker, (req, res) => {
+  readClassMembers(req.body.class_id, res);
 });
 
-app.post("/memberinfo", (req, res) => {
-  getMemberInfo(req.body.memberID, res);
+app.post("/membership", sessionChecker, (req, res) => {
+  updateMembership(req.body.member_id, req.body.class_id, res);
+});
+app.post("/noclass", sessionChecker, (req, res) => {
+  readMembersNoClass(req.body.church_id, res);
 });
 
-app.post("/classinfo", (req, res) => {
-  getClassInfo(req.body.classID, res);
-});
-
-app.post("/addmember", (req, res) => {
-  addMember(
-    req.body.fname,
-    req.body.lname,
+app.post("/createmember", sessionChecker, (req, res) => {
+  createMember(
+    req.body.first_name,
+    req.body.last_name,
     req.body.address,
-    req.body.phone,
+    req.body.phone_home,
     req.body.email,
     req,
     res
   );
 });
 
-app.post("/addrecord", (req, res) => {
-  addAttendanceRecord(
-    req.body.memberID,
-    req.body.classID,
-    req.body.status,
-    req.body.study,
-    res
-  );
+app.post("/member", sessionChecker, (req, res) => {
+  readMember(req.body.member_id, res);
 });
 
-app.post("/addrecords", (req, res) => {
+app.post("/updatemember", sessionChecker, (req, res) => {
+  update(req.body.member, res);
+});
+
+app.post("/deletemember", sessionChecker, (req, res) => {
+  deleteMember(req.body.member_id, res);
+});
+
+app.post("/createclass", sessionChecker, (req, res) => {
+  createClass(req.body.name, req.body.division, req.body.church_id, res);
+});
+
+app.post("/classinfo", sessionChecker, (req, res) => {
+  readClassInfo(req.body.class_id, res);
+});
+
+app.post("/updateclass", sessionChecker, (req, res) => {
+  updateClass(req.body.sbclass, res);
+});
+
+app.post("/deleteclass", sessionChecker, (req, res) => {
+  deleteClass(req.body.class_id, res);
+});
+
+app.post("/addrecords", sessionChecker, (req, res) => {
   addAttendanceRecords(req.body.members, req, res);
 });
 
-app.post("/adduser", (req, res) => {
+app.post("/adduser", sessionChecker, (req, res) => {
   addUser(req.body.username, req.body.password, req.body.member_id, res);
 });
 
 app.post("/login", (req, res) => {
-  getUserInfo(req.body.username, req.body.password, req, res);
+  authenticate(req.body.username, req.body.password, req, res);
 });
 
-app.get("/logout", (req, res) => {
-  if (res.session.user && req.cookies.member.id) {
-    res.clearCookie("member");
-    res.send("success");
-    conn.end();
-  } else {
-    res.send("fail");
-  }
+app.get("/logout", sessionChecker, (req, res) => {
+  res.clearCookie("member");
+  res.send(true);
+  conn.end();
 });
 
 app.listen(port, () => console.log(`SSDB app listening on port ${port}!`));
