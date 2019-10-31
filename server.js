@@ -58,8 +58,12 @@ readClassMembers = (class_id, res) => {
     ` 
     `;
 
-  conn.query(query, (error, results, fields) => {
-    res.send(results);
+  conn.query(query, (err, r, f) => {
+    if (err) {
+      console.log(err);
+      res.send(false);
+    }
+    res.send(r);
   });
 };
 
@@ -72,10 +76,10 @@ updateMembership = (member_id, class_id, res) => {
   WHERE 
 	  ssdb.membership.member_id = ?; 
  `;
-  conn.query(query, [member_id, class_id], (err, r, f) => {
+  conn.query(query, [class_id, member_id], (err, r, f) => {
     if (err) {
       res.send(false);
-      throw err;
+      console.log(err);
     }
     res.send(true);
   });
@@ -100,11 +104,15 @@ readMembersNoClass = (church_id, res) => {
     church_id +
     ` 
   AND
-    ssdb.membership.class_id = NULL
+    ssdb.membership.class_id IS NULL
     `;
 
-  conn.query(query, (error, results, fields) => {
-    res.send(results);
+  conn.query(query, (err, r, f) => {
+    if (err) {
+      console.log(err);
+      res.send(false);
+    }
+    res.send(r);
   });
 };
 
@@ -124,32 +132,32 @@ authenticate = (username, password, req, res) => {
     ssdb.auth.username = ? 
     `;
 
-  conn.query(query, [username], (error, results, fields) => {
+  conn.query(query, [username], (error, r, f) => {
     const options = {
       secure: false,
       httpOnly: false
       // domain: "localhost"
     };
 
-    if (results && results.length) {
-      crypt.compare(password, results[0].password, (err, resp) => {
+    if (r && r.length) {
+      crypt.compare(password, r[0].password, (err, resp) => {
         if (resp) {
-          req.session.memberID = results[0].member_id;
-          req.session.classID = results[0].class_id;
+          req.session.member_id = r[0].member_id;
+          req.session.class_id = r[0].class_id;
           res
             .cookie(
               "member",
-              { id: results[0].member_id, classID: results[0].class_id },
+              { id: r[0].member_id, classID: r[0].class_id },
               options
             )
             .status(200)
-            .send("success");
+            .send(true);
         } else {
-          res.send("fail");
+          res.send(false);
         }
       });
     } else {
-      res.send("fail");
+      res.send(false);
     }
   });
 };
@@ -171,25 +179,39 @@ createMember = (
     email: email
   };
 
-  conn.query(
-    "INSERT INTO ssdb.member SET ?",
-    post,
-    (error, results, fields) => {
-      if (error) throw error;
-      post = {
-        member_id: results.insertId,
-        class_id: req.cookies.member.classID
-      };
+  conn.query("INSERT INTO ssdb.member SET ?", post, (err, r, f) => {
+    if (err) throw error;
+    post = {
+      member_id: r.insertId,
+      class_id: req.cookies.member.class_id
+    };
 
-      conn.query("INSERT INTO ssdb.membership SET ?", post, (err, r, f) => {
-        if (err) {
-          console.log(err);
-        } else console.log(r.affectedRows + " row(s) inserted");
-      });
-      console.log(results.affectedRows + " row(s) inserted");
-      res.send("new member created");
-    }
-  );
+    var q = conn.query(
+      "SELECT ssdb.church_class.church_id FROM ssdb.church_class WHERE ssdb.church_class.class_id = ?",
+      [post.class_id],
+      (err2, r2, f2) => {
+        if (err2) {
+          console.log(err2);
+          res.send(false);
+        }
+        post["church_id"] = r2.church_id;
+        conn.query(
+          "INSERT INTO ssdb.membership SET ?",
+          post,
+          (err3, r3, f3) => {
+            if (err3) {
+              console.log(err3);
+              res.send(false);
+            } else console.log(r3.affectedRows + " row(s) inserted");
+          }
+        );
+      }
+    );
+
+    console.log(q.sql);
+    console.log(r.affectedRows + " row(s) inserted");
+    res.send(true);
+  });
 };
 
 readMember = (member_id, res) => {
@@ -216,9 +238,13 @@ readMember = (member_id, res) => {
 
   var resultSet = [];
 
-  conn.query(query + ";" + query2, (error, results, fields) => {
-    resultSet = results[0];
-    resultSet[0]["attendance"] = results[1];
+  conn.query(query + ";" + query2, (err, r, f) => {
+    if (err) {
+      console.log(err);
+      res.send(false);
+    }
+    resultSet = r[0];
+    resultSet[0]["attendance"] = r[1];
     res.send(resultSet);
   });
 };
@@ -245,7 +271,7 @@ updateMember = (member, res) => {
     member.id
   ];
 
-  conn.query(query, post, (err, results, fields) => {
+  conn.query(query, post, (err, r, f) => {
     if (err) {
       console.log(err);
       res.send(false);
@@ -264,10 +290,9 @@ deleteMember = (member_id, res) => {
       ssdb.membership.member_id = ?
   `;
 
-  conn.query(query, [member_id], (err, result, fields) => {
+  conn.query(query, [member_id], (err, r, f) => {
     if (err) {
       console.log(err);
-
       res.send(false);
     }
     res.send(true);
@@ -280,33 +305,29 @@ createClass = (name, division, church_id, res) => {
     division: division
   };
 
-  conn.query(
-    "INSERT INTO ssdb.sbclass SET ?",
-    post,
-    (error, results, fields) => {
-      if (error) {
-        res.send(false);
-        throw error;
-      }
-      post = {
-        class_id: results.insertId,
-        church_id: church_id
-      };
-
-      conn.query("INSERT INTO ssdb.church_class SET ?", post, (err, r, f) => {
-        if (err) {
-          conn.query(
-            "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?",
-            [results.insertId],
-            (err2, r2, f2) => {}
-          );
-          console.log(err);
-          res.send(false);
-        }
-        res.send(true);
-      });
+  conn.query("INSERT INTO ssdb.sbclass SET ?", post, (err, r, f) => {
+    if (err) {
+      console.log(err);
+      res.send(false);
     }
-  );
+    post = {
+      class_id: r.insertId,
+      church_id: church_id
+    };
+
+    conn.query("INSERT INTO ssdb.church_class SET ?", post, (err2, r2, f2) => {
+      if (err2) {
+        throw err2;
+        conn.query(
+          "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?",
+          [r.insertId],
+          (err3, r3, f3) => {}
+        );
+        res.send(false);
+      }
+      res.send(true);
+    });
+  });
 };
 
 readClassInfo = (class_id, res) => {
@@ -361,9 +382,13 @@ readClassInfo = (class_id, res) => {
     ` 
     `;
   var resultSet = [];
-  conn.query(query + ";" + query2, (error, results, fields) => {
-    resultSet = results[0];
-    resultSet[0]["members"] = results[1];
+  conn.query(query + ";" + query2, (err, r, f) => {
+    if (err) {
+      console.log(err);
+      res.send(false);
+    }
+    resultSet = r[0];
+    resultSet[0]["members"] = r[1];
     res.send(resultSet);
   });
 };
@@ -393,8 +418,8 @@ updateClass = (sbclass, res) => {
 
   conn.query(query, post, (err, r, f) => {
     if (err) {
+      console.log(err);
       res.send(false);
-      throw err;
     }
     res.send(true);
   });
@@ -404,8 +429,8 @@ deleteClass = (class_id, res) => {
   let query = "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?";
   conn.query(query, [class_id], (err, r, f) => {
     if (err) {
+      console.log(err);
       res.send(false);
-      throw err;
     }
     res.send(true);
   });
@@ -423,8 +448,12 @@ addUser = (username, password, member_id, res) => {
       "INSERT INTO ssdb.auth SET ?",
       post,
       (error, results, fields) => {
-        if (error) throw error;
+        if (error) {
+          throw error;
+          res.send(false);
+        }
         console.log(results.affectedRows + " row(s) inserted");
+        res.send(true);
       }
     );
   });
@@ -435,28 +464,28 @@ addAttendanceRecords = (members, req, res) => {
   members.forEach(member => {
     post.push([
       member.id,
-      req.cookies.member.classID,
+      req.cookies.member.class_id,
       member.status,
       member.studied
     ]);
   });
 
-  console.log(post);
-
   var query = conn.query(
     "INSERT INTO ssdb.attendance (member_id, class_id, status, study) VALUES ?",
     [post],
-    (error, results, fields) => {
-      if (error) throw error;
-      res.send(results.affectedRows + " row(s) inserted");
+    (err, r, f) => {
+      if (err) {
+        console.log(err);
+        res.send(false);
+      }
+      console.log(results.affectedRows + " row(s) inserted");
+      res.send(true);
     }
   );
-
-  console.log(query.sql);
 };
 
 sessionChecker = (req, res, next) => {
-  if (req.session.user && req.cookies.member.id) {
+  if (req.session.member_id && req.cookies.member.id) {
     next();
   } else {
     res.send(false);
@@ -464,7 +493,7 @@ sessionChecker = (req, res, next) => {
 };
 
 app.get("/", sessionChecker, (req, res) => {
-  res.send(false);
+  res.send(true);
 });
 
 app.post("/classmembers", sessionChecker, (req, res) => {
