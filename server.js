@@ -37,6 +37,39 @@ var conn = mysql.createConnection({
   database: "ssdb",
   multipleStatements: true
 });
+/*
+ROLES
+-----------------------
+lvl 1
+admin
+
+lvl 2
+chlead
+
+lvl 3
+clead
+*/
+
+var userRoles = (role = {
+  clead: 1,
+  chlead: 2,
+  admin: 4
+});
+var accessLvl = {
+  clead: userRoles.clead | userRoles.chlead | userRoles.admin,
+  chlead: userRoles.chlead | userRoles.admin,
+  admin: userRoles.admin
+};
+
+levelCheck = lvl => {
+  return (req, res, next) => {
+    if (lvl & req.session.level) {
+      next();
+    } else {
+      res.send("Not authorized");
+    }
+  };
+};
 
 readClassMembers = (class_id, res) => {
   let query =
@@ -121,7 +154,8 @@ authenticate = (username, password, req, res) => {
     SELECT 
     ssdb.membership.member_id,
       ssdb.membership.class_id,
-      ssdb.auth.password
+      ssdb.auth.password,
+      ssdb.auth.level
   FROM 
     ssdb.membership 
   INNER JOIN
@@ -144,20 +178,23 @@ authenticate = (username, password, req, res) => {
         if (resp) {
           req.session.member_id = r[0].member_id;
           req.session.class_id = r[0].class_id;
+          req.session.level = r[0].level;
           res
             .cookie(
               "member",
-              { id: r[0].member_id, classID: r[0].class_id },
+              { id: r[0].member_id, class_id: r[0].class_id },
               options
             )
             .status(200)
             .send(true);
         } else {
-          res.send(false);
+          res.send("Incorrect Password");
         }
       });
     } else {
-      res.send(false);
+      console.log(r + "\n" + r.length);
+
+      res.send("Incorrect username");
     }
   });
 };
@@ -168,6 +205,7 @@ createMember = (
   address,
   phone_home,
   email,
+  class_id,
   req,
   res
 ) => {
@@ -178,12 +216,13 @@ createMember = (
     phone_home: phone_home,
     email: email
   };
+  console.log(req.cookies.member.class_id);
 
   conn.query("INSERT INTO ssdb.member SET ?", post, (err, r, f) => {
     if (err) throw error;
     post = {
       member_id: r.insertId,
-      class_id: req.cookies.member.class_id
+      class_id: class_id
     };
 
     var q = conn.query(
@@ -194,7 +233,9 @@ createMember = (
           console.log(err2);
           res.send(false);
         }
-        post["church_id"] = r2.church_id;
+        post["church_id"] = r2[0].church_id;
+        console.log(JSON.stringify(post) + "\n" + r2[0].church_id);
+
         conn.query(
           "INSERT INTO ssdb.membership SET ?",
           post,
@@ -217,7 +258,7 @@ createMember = (
 readMember = (member_id, res) => {
   let query2 =
     `SELECT ssdb.attendance.id, ssdb.attendance.date, ssdb.attendance.status, ssdb.attendance.study FROM ssdb.attendance where ssdb.attendance.member_id=` +
-    memberID +
+    member_id +
     ``;
   let query =
     `
@@ -299,7 +340,7 @@ deleteMember = (member_id, res) => {
   });
 };
 
-createClass = (name, division, church_id, res) => {
+createClass = (name, division, church_id, req, res) => {
   let post = {
     name: name,
     division: division
@@ -319,7 +360,7 @@ createClass = (name, division, church_id, res) => {
       if (err2) {
         throw err2;
         conn.query(
-          "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?",
+          "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_id = ?",
           [r.insertId],
           (err3, r3, f3) => {}
         );
@@ -355,7 +396,7 @@ readClassInfo = (class_id, res) => {
    ON
      ssdb.sbclass.care_coordinator=care.id
    WHERE 
-     ssdb.sbclass.class_num=
+     ssdb.sbclass.class_id=
         
     ` +
     class_id +
@@ -378,7 +419,7 @@ readClassInfo = (class_id, res) => {
     ssdb.membership.class_id=
         
     ` +
-    classID +
+    class_id +
     ` 
     `;
   var resultSet = [];
@@ -404,7 +445,7 @@ updateClass = (sbclass, res) => {
     ssdb.sbclass.care_coordinator = ?,
     ssdb.sbclass.secretary = ?
   WHERE
-	  ssdb.sbclass.class_num = ?;
+	  ssdb.sbclass.class_id = ?;
   `;
 
   let post = [
@@ -413,7 +454,7 @@ updateClass = (sbclass, res) => {
     sbclass.teacher,
     sbclass.care_coordinator,
     sbclass.secretary,
-    sbclass.class_num
+    sbclass.class_id
   ];
 
   conn.query(query, post, (err, r, f) => {
@@ -426,7 +467,7 @@ updateClass = (sbclass, res) => {
 };
 
 deleteClass = (class_id, res) => {
-  let query = "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_num = ?";
+  let query = "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_id = ?";
   conn.query(query, [class_id], (err, r, f) => {
     if (err) {
       console.log(err);
@@ -492,68 +533,129 @@ sessionChecker = (req, res, next) => {
   }
 };
 
-app.get("/", sessionChecker, (req, res) => {
+app.get("/", sessionChecker, levelCheck(accessLvl.clead), (req, res) => {
   res.send(true);
 });
 
-app.post("/classmembers", sessionChecker, (req, res) => {
-  readClassMembers(req.body.class_id, res);
-});
+app.post(
+  "/classmembers",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    readClassMembers(req.body.class_id, res);
+  }
+);
 
-app.post("/membership", sessionChecker, (req, res) => {
-  updateMembership(req.body.member_id, req.body.class_id, res);
-});
-app.post("/noclass", sessionChecker, (req, res) => {
-  readMembersNoClass(req.body.church_id, res);
-});
+app.post(
+  "/membership",
+  sessionChecker,
+  levelCheck(accessLvl.chlead),
+  (req, res) => {
+    updateMembership(req.body.member_id, req.body.class_id, res);
+  }
+);
+app.post(
+  "/noclass",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    readMembersNoClass(req.body.church_id, res);
+  }
+);
 
-app.post("/createmember", sessionChecker, (req, res) => {
-  createMember(
-    req.body.first_name,
-    req.body.last_name,
-    req.body.address,
-    req.body.phone_home,
-    req.body.email,
-    req,
-    res
-  );
-});
+app.post(
+  "/createmember",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    createMember(
+      req.body.first_name,
+      req.body.last_name,
+      req.body.address,
+      req.body.phone_home,
+      req.body.email,
+      req.body.class_id,
+      req,
+      res
+    );
+  }
+);
 
-app.post("/member", sessionChecker, (req, res) => {
+app.post("/member", sessionChecker, levelCheck(accessLvl.clead), (req, res) => {
   readMember(req.body.member_id, res);
 });
 
-app.post("/updatemember", sessionChecker, (req, res) => {
-  update(req.body.member, res);
-});
+app.post(
+  "/updatemember",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    updateMember(req.body.member, res);
+  }
+);
+//just sets membershipt to null to remove from class. also intended for reassignment
+app.post(
+  "/deletemember",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    deleteMember(req.body.member_id, res);
+  }
+);
+//create class, add members, then assign roles
+app.post(
+  "/createclass",
+  sessionChecker,
+  levelCheck(accessLvl.chlead),
+  (req, res) => {
+    createClass(req.body.name, req.body.division, req.body.church_id, req, res);
+  }
+);
 
-app.post("/deletemember", sessionChecker, (req, res) => {
-  deleteMember(req.body.member_id, res);
-});
+app.post(
+  "/classinfo",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    readClassInfo(req.body.class_id, res);
+  }
+);
 
-app.post("/createclass", sessionChecker, (req, res) => {
-  createClass(req.body.name, req.body.division, req.body.church_id, res);
-});
+app.post(
+  "/updateclass",
+  sessionChecker,
+  levelCheck(accessLvl.chlead),
+  (req, res) => {
+    updateClass(req.body.sbclass, res);
+  }
+);
 
-app.post("/classinfo", sessionChecker, (req, res) => {
-  readClassInfo(req.body.class_id, res);
-});
+app.post(
+  "/deleteclass",
+  sessionChecker,
+  levelCheck(accessLvl.chlead),
+  (req, res) => {
+    deleteClass(req.body.class_id, res);
+  }
+);
 
-app.post("/updateclass", sessionChecker, (req, res) => {
-  updateClass(req.body.sbclass, res);
-});
+app.post(
+  "/addrecords",
+  sessionChecker,
+  levelCheck(accessLvl.clead),
+  (req, res) => {
+    addAttendanceRecords(req.body.members, req, res);
+  }
+);
 
-app.post("/deleteclass", sessionChecker, (req, res) => {
-  deleteClass(req.body.class_id, res);
-});
-
-app.post("/addrecords", sessionChecker, (req, res) => {
-  addAttendanceRecords(req.body.members, req, res);
-});
-
-app.post("/adduser", sessionChecker, (req, res) => {
-  addUser(req.body.username, req.body.password, req.body.member_id, res);
-});
+app.post(
+  "/adduser",
+  sessionChecker,
+  levelCheck(accessLvl.admin),
+  (req, res) => {
+    addUser(req.body.username, req.body.password, req.body.member_id, res);
+  }
+);
 
 app.post("/login", (req, res) => {
   authenticate(req.body.username, req.body.password, req, res);
