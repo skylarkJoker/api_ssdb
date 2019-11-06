@@ -13,6 +13,7 @@ module.exports.accessLevel = {
 module.exports.levelCheck = level => {
   return (req, res, next) => {
     if (level & req.session.level) {
+      // if (level & 4) {
       next();
     } else {
       res.status(403).send("User level is insufficient to preform this action");

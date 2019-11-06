@@ -22,8 +22,9 @@ router.post(
     //cookie options
     const options = {
       secure: false,
-      httpOnly: false
-      // domain: "localhost"
+      httpOnly: false,
+      maxAge: 100000,
+      domain: "localhost"
     };
 
     authController.authenticate(

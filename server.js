@@ -3,14 +3,13 @@ const session = require("express-session");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const crypt = require("bcrypt");
-const { check, validationResult } = require("express-validator");
-var mysql = require("mysql");
+const helmet = require("helmet");
 var auth = require("./routes/auth");
 var members = require("./routes/member");
 var sbclass = require("./routes/class");
 var authCheck = require("./routes/mdware");
-
+var MySQLStore = require("express-mysql-session")(session);
+var db = require("./controller/db");
 const app = express();
 const port = 3002;
 
@@ -19,15 +18,22 @@ var corsOptions = {
   optionSuccessStatus: 200,
   credentials: true
 };
+var sessionStore = null;
+db.pool.getConnection((err, conn) => {
+  sessionStore = new MySQLStore({}, conn);
+});
 
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(
   session({
     secret: "YellowPancakeHut",
+    name: "blitz",
     saveUninitialized: true,
     resave: true,
+    store: sessionStore,
     cookie: {
       httpOnly: false,
       secure: false
