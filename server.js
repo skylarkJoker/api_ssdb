@@ -21,9 +21,8 @@ var corsOptions = {
 var sessionStore = new MySQLStore(
   {
     clearExpired: true,
-    checkExpirationInterval: 120000,
-    expiration: 600000,
-    connectionLimit: 10
+    checkExpirationInterval: 120000
+    // expiration: 600000,
   },
   db.pool
 );
