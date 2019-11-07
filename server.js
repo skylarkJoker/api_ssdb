@@ -7,21 +7,26 @@ const helmet = require("helmet");
 var auth = require("./routes/auth");
 var members = require("./routes/member");
 var sbclass = require("./routes/class");
-var authCheck = require("./routes/mdware");
-var MySQLStore = require("express-mysql-session")(session);
 var db = require("./controller/db");
 const app = express();
 const port = 3002;
+var MySQLStore = require("express-mysql-session")(session);
 
 var corsOptions = {
   // origin: "http://localhost:3000",
   optionSuccessStatus: 200,
   credentials: true
 };
-var sessionStore = null;
-db.pool.getConnection((err, conn) => {
-  sessionStore = new MySQLStore({}, conn);
-});
+
+var sessionStore = new MySQLStore(
+  {
+    clearExpired: true,
+    checkExpirationInterval: 120000,
+    expiration: 600000,
+    connectionLimit: 10
+  },
+  db.pool
+);
 
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -31,7 +36,7 @@ app.use(
   session({
     secret: "YellowPancakeHut",
     name: "blitz",
-    saveUninitialized: true,
+    saveUninitialized: false,
     resave: true,
     store: sessionStore,
     cookie: {
@@ -51,7 +56,11 @@ app.use("/members", members);
 app.use("/class", sbclass);
 
 //test route
-app.post("/", authCheck.levelCheck(authCheck.accessLevel.admin), (req, res) => {
+app.post("/", (req, res) => {
+  sessionStore.length((err, sess) => {
+    console.log(sess);
+  });
+
   res.send(true);
 });
 
