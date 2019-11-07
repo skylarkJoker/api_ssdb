@@ -40,3 +40,4 @@ db/Dump20191105/ssdb_guests.sql
 db/Dump20191105/ssdb_member.sql
 db/Dump20191105/ssdb_membership.sql
 db/Dump20191105/ssdb_sbclass.sql
+ssdb.postman_collection.json
