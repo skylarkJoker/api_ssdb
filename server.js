@@ -12,6 +12,9 @@ const app = express();
 const port = 3002;
 var MySQLStore = require("express-mysql-session")(session);
 
+var dotenv = require("dotenv");
+dotenv.config();
+
 var corsOptions = {
   // origin: "http://localhost:3000",
   optionSuccessStatus: 200,
@@ -21,29 +24,34 @@ var corsOptions = {
 var sessionStore = new MySQLStore(
   {
     clearExpired: true,
-    checkExpirationInterval: 120000
-    // expiration: 600000,
+    checkExpirationInterval: 300000,
+    expiration: 600000
   },
   db.pool
 );
+var sessionOps = {
+  secret: process.env.SECRET,
+  name: "blitz",
+  saveUninitialized: false,
+  resave: true,
+  store: sessionStore,
+  cookie: {
+    httpOnly: false,
+    secure: false,
+    domain: "localhost"
+  }
+};
 
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(
-  session({
-    secret: "YellowPancakeHut",
-    name: "blitz",
-    saveUninitialized: false,
-    resave: true,
-    store: sessionStore,
-    cookie: {
-      httpOnly: false,
-      secure: false
-    }
-  })
-);
+app.use(session(sessionOps));
+
+if (app.get("env") === "production") {
+  app.set("trust proxy", 1);
+  sessionOps.cookie.secure = true;
+}
 
 //authentication routes
 app.use("/auth", auth);
