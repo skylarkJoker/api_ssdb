@@ -32,3 +32,11 @@ db/data_m.csv
 db/data_msh.csv
 db/members.csv
 db/SSDB_complete.sql
+db/Dump20191105/ssdb_attendance.sql
+db/Dump20191105/ssdb_auth.sql
+db/Dump20191105/ssdb_church_class.sql
+db/Dump20191105/ssdb_churches.sql
+db/Dump20191105/ssdb_guests.sql
+db/Dump20191105/ssdb_member.sql
+db/Dump20191105/ssdb_membership.sql
+db/Dump20191105/ssdb_sbclass.sql

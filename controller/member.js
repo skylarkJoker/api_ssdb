@@ -147,7 +147,7 @@ module.exports.deleteMember = (member_id, callback) => {
     WHERE
       ssdb.membership.member_id = ?
   `;
-  db.pool.getConnection((err, r) => {
+  db.pool.getConnection((err, conn) => {
     if (err) {
       console.log(err);
       callback(true);

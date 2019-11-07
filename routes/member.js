@@ -112,7 +112,7 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
-    deleteMember(req.body.member_id, (err, r) => {
+    memberController.deleteMember(req.body.member_id, (err, r) => {
       if (err) return res.status(422).json({ errors: errors.array() });
       res.status(200).send(r);
     });

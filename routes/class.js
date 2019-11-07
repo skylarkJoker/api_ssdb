@@ -124,8 +124,7 @@ router.post(
     .isEmpty(),
   check("sbclass.division")
     .exists()
-    .not()
-    .isEmpty(),
+    .isIn(["adult", "youth"]),
   check("sbclass.teacher").exists(),
   check("sbclass.care_coordinator").exists(),
   check("sbclass.secretary").exists(),
@@ -177,7 +176,9 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
-    classController.addAttendanceRecords(req.body.members, (err, r) => {
+    var members = req.body.members;
+    members["class_id"] = req.cookies.member.class_id;
+    classController.addAttendanceRecords(members, (err, r) => {
       if (err) return res.status(422).send("Error creating records");
 
       res.status(200).send("Records created: " + r);

@@ -140,7 +140,7 @@ module.exports.createClass = (name, division, church_id, callback) => {
     });
   });
 };
-
+//prevent if no members added yet
 module.exports.readClassInfo = (class_id, callback) => {
   let query =
     `
@@ -153,15 +153,15 @@ module.exports.readClassInfo = (class_id, callback) => {
    
    FROM
      ssdb.sbclass
-   INNER JOIN 
+   LEFT JOIN 
      ssdb.member as teacher
    ON
      ssdb.sbclass.teacher=teacher.id
-   INNER JOIN 
+   LEFT JOIN 
      ssdb.member as secretary
    ON
      ssdb.sbclass.secretary=secretary.id
-   INNER JOIN 
+   LEFT JOIN 
      ssdb.member as care
    ON
      ssdb.sbclass.care_coordinator=care.id
@@ -205,8 +205,13 @@ module.exports.readClassInfo = (class_id, callback) => {
         callback(true);
         return;
       }
+      if (!(r && r.length)) {
+        callback(false, "no members");
+        return;
+      }
       resultSet = r[0];
       resultSet[0]["members"] = r[1];
+
       callback(false, resultSet);
     });
   });
@@ -271,15 +276,10 @@ module.exports.deleteClass = (class_id, callback) => {
   });
 };
 
-module.exports.addAttendanceRecords = (members, req, callback) => {
+module.exports.addAttendanceRecords = (members, callback) => {
   let post = [];
   members.forEach(member => {
-    post.push([
-      member.id,
-      req.cookies.member.class_id,
-      member.status,
-      member.studied
-    ]);
+    post.push([member.id, member.class_id, member.status, member.studied]);
   });
 
   db.pool.getConnection((err, conn) => {
@@ -297,7 +297,7 @@ module.exports.addAttendanceRecords = (members, req, callback) => {
           callback(true);
           return;
         }
-        callback(false, results.affectedRows + " row(s) inserted");
+        callback(false, r.affectedRows + " row(s) inserted");
       }
     );
   });
