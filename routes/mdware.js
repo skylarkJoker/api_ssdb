@@ -22,12 +22,8 @@ module.exports.levelCheck = level => {
 };
 
 module.exports.sessionChecker = (req, res, next) => {
-  if (req.cookies.member) {
-    if (req.session.member_id && req.cookies.member.id) {
-      next();
-    } else {
-      res.send("Please login");
-    }
+  if (req.session.member_id && req.cookies.blitz) {
+    next();
   } else {
     res.send("Please login");
   }

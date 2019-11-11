@@ -31,9 +31,10 @@ router.post(
           req.session.class_id = userData.class_id;
           req.session.level = userData.level;
           res
-            .cookie("member", {
-              id: userData.member_id,
-              class_id: userData.class_id
+            .cookie("userData", {
+              member_id: userData.member_id,
+              class_id: userData.class_id,
+              level: userData.level
             })
             .status(200)
             .send("Successfully logged in");
@@ -75,7 +76,7 @@ router.get(
 
   authCheck.sessionChecker,
   (req, res) => {
-    res.clearCookie("member");
+    res.clearCookie("blitz");
     res.status(200).send("Successfully logged out");
   }
 );

@@ -148,7 +148,7 @@ module.exports.readClassInfo = (class_id, callback) => {
     ssdb.sbclass.name,
     ssdb.sbclass.division,
     concat_ws("", teacher.first_name, " ", teacher.last_name) as tname,
-    concat_ws("", secretary.first_name, " ", teacher.last_name) as sname,
+    concat_ws("", secretary.first_name, " ", secretary.last_name) as sname,
     concat_ws("", care.first_name, " ", care.last_name) as cname
    
    FROM

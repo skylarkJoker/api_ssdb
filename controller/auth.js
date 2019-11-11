@@ -53,6 +53,8 @@ module.exports.authenticate = (username, password, callback) => {
             level: r[0].level
           };
           callback(false, userData);
+        } else {
+          callback(true, "incorrect password");
         }
       });
     } else {

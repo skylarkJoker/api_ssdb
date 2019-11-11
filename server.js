@@ -47,6 +47,14 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(session(sessionOps));
+app.use((req, res, next) => {
+  console.log(req.session.member_id);
+
+  if (req.cookies.blitz && !req.session.member_id) {
+    res.clearCookie("blitz");
+  }
+  next();
+});
 
 if (app.get("env") === "production") {
   app.set("trust proxy", 1);
