@@ -8,13 +8,12 @@ router.post(
   "/members",
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
-  check("class_id").isInt(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
-    classController.readClassMembers(req.body.class_id, (err, r) => {
+    classController.readClassMembers(req.session.class_id, (err, r) => {
       if (err) return res.status(422).send("Error getting members");
 
       res.status(200).json(r);
@@ -115,6 +114,23 @@ router.post(
 );
 
 router.post(
+  "/myclassinfo",
+  authCheck.sessionChecker,
+  authCheck.levelCheck(authCheck.accessLevel.clead),
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    classController.readClassInfo(req.session.class_id, (err, r) => {
+      if (err) return res.status(422).send("Error getting class");
+
+      res.status(200).json(r);
+    });
+  }
+);
+
+router.post(
   "/update",
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.chlead),
@@ -177,7 +193,7 @@ router.post(
       return res.status(422).json({ errors: errors.array() });
     }
     var members = req.body.members;
-    members["class_id"] = req.cookies.member.class_id;
+    members["class_id"] = req.session.class_id;
     classController.addAttendanceRecords(members, (err, r) => {
       if (err) return res.status(422).send("Error creating records");
 

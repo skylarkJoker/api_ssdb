@@ -30,14 +30,7 @@ router.post(
           req.session.member_id = userData.member_id;
           req.session.class_id = userData.class_id;
           req.session.level = userData.level;
-          res
-            .cookie("userData", {
-              member_id: userData.member_id,
-              class_id: userData.class_id,
-              level: userData.level
-            })
-            .status(200)
-            .send("Successfully logged in");
+          res.status(200).send("Successfully logged in");
         }
       }
     );
