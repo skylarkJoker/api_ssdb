@@ -118,10 +118,6 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
     classController.readClassInfo(req.session.class_id, (err, r) => {
       if (err) return res.status(422).send("Error getting class");
 

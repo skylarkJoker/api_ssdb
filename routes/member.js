@@ -25,10 +25,6 @@ router.post(
   check("member.email")
     .optional({ nullable: true, checkFalsy: true })
     .isEmail(),
-  check("member.class_id")
-    .exists()
-    .not()
-    .isEmpty(),
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
@@ -36,6 +32,8 @@ router.post(
     if (!errors.isEmpty()) {
       return res.status(422).json({ errors: errors.array() });
     }
+    var member = req.body.member;
+    member["class_id"] = req.session.class_id;
     memberController.createMember(req.body.member, (err, r) => {
       if (err) return res.status(422).send("Error creating member");
 
@@ -55,6 +53,7 @@ router.post(
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      next(errors);
       return res.status(422).json({ errors: errors.array() });
     }
     memberController.readMember(req.body.member_id, (err, r) => {

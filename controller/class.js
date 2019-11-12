@@ -279,7 +279,7 @@ module.exports.deleteClass = (class_id, callback) => {
 module.exports.addAttendanceRecords = (members, callback) => {
   let post = [];
   members.forEach(member => {
-    post.push([member.id, member.class_id, member.status, member.studied]);
+    post.push([member.id, members.class_id, member.status, member.studied]);
   });
 
   db.pool.getConnection((err, conn) => {

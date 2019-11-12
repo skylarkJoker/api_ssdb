@@ -17,6 +17,7 @@ module.exports.levelCheck = level => {
       next();
     } else {
       res.status(403).send("User level is insufficient to preform this action");
+      console.log("level check fail");
     }
   };
 };
@@ -26,5 +27,6 @@ module.exports.sessionChecker = (req, res, next) => {
     next();
   } else {
     res.send("Please login");
+    console.log("login check fail");
   }
 };

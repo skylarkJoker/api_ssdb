@@ -24,8 +24,8 @@ var corsOptions = {
 var sessionStore = new MySQLStore(
   {
     clearExpired: true,
-    checkExpirationInterval: 300000,
-    expiration: 600000
+    checkExpirationInterval: 60 * 1000 * 5,
+    expiration: 60 * 1000 * 10
   },
   db.pool
 );
@@ -34,7 +34,7 @@ var sessionOps = {
   name: "blitz",
   saveUninitialized: false,
   resave: true,
-  store: sessionStore,
+  // store: sessionStore,
   cookie: {
     httpOnly: false,
     secure: false,
