@@ -26,6 +26,7 @@ module.exports.readClassMembers = (class_id, callback) => {
       return;
     }
     conn.query(query, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -53,6 +54,7 @@ module.exports.updateMembership = (member_id, class_id, callback) => {
       return;
     }
     conn.query(query, [class_id, member_id], (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -91,6 +93,7 @@ module.exports.readMembersNoClass = (church_id, callback) => {
       return;
     }
     conn.query(query, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -113,6 +116,7 @@ module.exports.createClass = (name, division, church_id, callback) => {
       return;
     }
     conn.query("INSERT INTO ssdb.sbclass SET ?", post, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -124,11 +128,14 @@ module.exports.createClass = (name, division, church_id, callback) => {
       };
 
       conn.query("INSERT INTO ssdb.church_class SET ?", post, (err, r, f) => {
+        conn.release();
         if (err) {
           conn.query(
             "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_id = ?",
             [r.insertId],
-            (err, r, f) => {}
+            (err, r, f) => {
+              conn.release();
+            }
           );
           console.log(err);
           callback(true);
@@ -199,8 +206,14 @@ module.exports.readClassInfo = (class_id, callback) => {
       callback(true);
       return;
     }
-    conn.query(query + ";" + query2, (err, r, f) => {
-      if (err) {
+    conn.query({ sql: query + ";" + query2, timeout: 5000 }, (err, r, f) => {
+      conn.release();
+
+      if (err && err.code === "PROTOCOL_SEQUENCE_TIMEOUT") {
+        console.log(err);
+        callback(true);
+        return;
+      } else if (err) {
         console.log(err);
         callback(true);
         return;
@@ -247,6 +260,7 @@ module.exports.updateClass = (sbclass, callback) => {
       return;
     }
     conn.query(query, post, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -266,6 +280,7 @@ module.exports.deleteClass = (class_id, callback) => {
       return;
     }
     conn.query(query, [class_id], (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -292,6 +307,7 @@ module.exports.addAttendanceRecords = (members, callback) => {
       "INSERT INTO ssdb.attendance (member_id, class_id, status, study) VALUES ?",
       [post],
       (err, r, f) => {
+        conn.release();
         if (err) {
           console.log(err);
           callback(true);

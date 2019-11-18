@@ -25,6 +25,7 @@ getUser = (username, callback) => {
       return;
     }
     conn.query(query, [username], (err, r) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -75,6 +76,7 @@ module.exports.addUser = (username, password, member_id, callback) => {
 
     db.pool.getConnection((err, conn) => {
       conn.query("INSERT INTO ssdb.auth SET ?", post, (err, r, f) => {
+        conn.release();
         if (err) {
           console.log(err);
           callback(true);

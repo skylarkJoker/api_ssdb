@@ -16,6 +16,7 @@ module.exports.createMember = (member, callback) => {
       return;
     }
     conn.query("INSERT INTO ssdb.member SET ?", post, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -30,6 +31,7 @@ module.exports.createMember = (member, callback) => {
         "SELECT ssdb.church_class.church_id FROM ssdb.church_class WHERE ssdb.church_class.class_id = ?",
         [post.class_id],
         (err, r, f) => {
+          conn.release();
           if (err) {
             console.log(err);
             callback(true);
@@ -39,11 +41,13 @@ module.exports.createMember = (member, callback) => {
           post["church_id"] = r[0].church_id;
 
           conn.query("INSERT INTO ssdb.membership SET ?", post, (err, r, f) => {
+            conn.release();
             if (err) {
               conn.query(
                 "DELETE FROM ssdb.member WHERE ssdb.member.id = ?",
                 [post.member_id],
                 err => {
+                  conn.release();
                   if (err) {
                     console.log(err);
                     callback(true);
@@ -88,6 +92,7 @@ module.exports.readMember = (member_id, callback) => {
   var resultSet = [];
   db.pool.getConnection((err, conn) => {
     conn.query(query + ";" + query2, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -128,6 +133,7 @@ module.exports.updateMember = (member, callback) => {
       return;
     }
     conn.query(query, post, (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);
@@ -154,6 +160,7 @@ module.exports.deleteMember = (member_id, callback) => {
       return;
     }
     conn.query(query, [member_id], (err, r, f) => {
+      conn.release();
       if (err) {
         console.log(err);
         callback(true);

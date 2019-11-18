@@ -11,6 +11,8 @@ var db = require("./controller/db");
 const app = express();
 const port = 3002;
 var MySQLStore = require("express-mysql-session")(session);
+var authCheck = require("./routes/mdware");
+var classController = require("./controller/class");
 
 var dotenv = require("dotenv");
 dotenv.config();
@@ -34,7 +36,7 @@ var sessionOps = {
   name: "blitz",
   saveUninitialized: false,
   resave: true,
-  // store: sessionStore,
+  store: sessionStore,
   cookie: {
     httpOnly: false,
     secure: false,
@@ -48,8 +50,6 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(session(sessionOps));
 app.use((req, res, next) => {
-  console.log(req.session.member_id);
-
   if (req.cookies.blitz && !req.session.member_id) {
     res.clearCookie("blitz");
   }
@@ -72,10 +72,6 @@ app.use("/class", sbclass);
 
 //test route
 app.post("/", (req, res) => {
-  sessionStore.length((err, sess) => {
-    console.log(sess);
-  });
-
   res.send(true);
 });
 

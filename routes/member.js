@@ -48,7 +48,7 @@ router.post(
   check("member_id")
     .exists()
     .isInt(),
-  authCheck.sessionChecker,
+  // authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
     const errors = validationResult(req);

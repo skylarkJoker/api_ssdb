@@ -120,7 +120,6 @@ router.post(
   (req, res) => {
     classController.readClassInfo(req.session.class_id, (err, r) => {
       if (err) return res.status(422).send("Error getting class");
-
       res.status(200).json(r);
     });
   }
