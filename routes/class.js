@@ -24,18 +24,11 @@ router.post(
 router.post(
   "/membership",
   authCheck.sessionChecker,
-  authCheck.levelCheck(authCheck.accessLevel.chlead),
-  check("member_id").isInt(),
-  check("class_id").isInt(),
+  authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
-
     classController.updateMembership(
-      req.body.member_id,
-      req.body.class_id,
+      req.body.members,
+      req.session.class_id,
       (err, r) => {
         if (err) return res.status(422).send("Error updating membership");
 
@@ -49,13 +42,8 @@ router.post(
   "/noclass",
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
-  check("church_id").isInt(),
   (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
-    classController.readMembersNoClass(req.body.church_id, (err, r) => {
+    classController.readMembersNoClass(req.session.class_id, (err, r) => {
       if (err) return res.status(422).send("Error retrieving members");
 
       res.status(200).json(r);

@@ -37,14 +37,14 @@ module.exports.readClassMembers = (class_id, callback) => {
   });
 };
 
-module.exports.updateMembership = (member_id, class_id, callback) => {
+module.exports.updateMembership = (members, class_id, callback) => {
   let query = `
   UPDATE
 	  ssdb.membership
   SET
 	  ssdb.membership.class_id = ?
   WHERE 
-	  ssdb.membership.member_id = ?; 
+	  ssdb.membership.member_id IN ?; 
  `;
 
   db.pool.getConnection((err, conn) => {
@@ -53,7 +53,7 @@ module.exports.updateMembership = (member_id, class_id, callback) => {
       callback(true);
       return;
     }
-    conn.query(query, [class_id, member_id], (err, r, f) => {
+    conn.query(query, [class_id, [members]], (err, r, f) => {
       conn.release();
       if (err) {
         console.log(err);
@@ -65,41 +65,54 @@ module.exports.updateMembership = (member_id, class_id, callback) => {
   });
 };
 
-module.exports.readMembersNoClass = (church_id, callback) => {
+module.exports.readMembersNoClass = (class_id, callback) => {
   let query =
-    `
-    SELECT
-    ssdb.member.id,
-    ssdb.member.first_name,
-    ssdb.member.last_name,
-    ssdb.member.address,
-    ssdb.member.phone_home,
-    ssdb.member.email
-   FROM
-    ssdb.member 
-   INNER JOIN
-       ssdb.membership ON ssdb.membership.member_id=ssdb.member.id
-   WHERE 
-       ssdb.membership.church_id = ` +
-    church_id +
-    ` 
-  AND
-    ssdb.membership.class_id IS NULL
-    `;
+    `SELECT ssdb.church_class.church_id FROM ssdb.church_class WHERE ssdb.church_class.class_id =` +
+    class_id;
   db.pool.getConnection((err, conn) => {
     if (err) {
       console.log(err);
       callback(true);
       return;
     }
+
     conn.query(query, (err, r, f) => {
-      conn.release();
       if (err) {
         console.log(err);
         callback(true);
         return;
       }
-      callback(false, r);
+
+      query =
+        `
+        SELECT
+        ssdb.member.id,
+        ssdb.member.first_name,
+        ssdb.member.last_name,
+        ssdb.member.address,
+        ssdb.member.phone_home,
+        ssdb.member.email
+       FROM
+        ssdb.member
+       INNER JOIN
+           ssdb.membership ON ssdb.membership.member_id=ssdb.member.id
+       WHERE
+           ssdb.membership.church_id = ` +
+        r[0].church_id +
+        `
+      AND
+        ssdb.membership.class_id IS NULL
+        `;
+
+      conn.query(query, (err, r, f) => {
+        conn.release();
+        if (err) {
+          console.log(err);
+          callback(true);
+          return;
+        }
+        callback(false, r);
+      });
     });
   });
 };
@@ -218,10 +231,11 @@ module.exports.readClassInfo = (class_id, callback) => {
         callback(true);
         return;
       }
-      if (!(r && r.length)) {
-        callback(false, "no members");
+      if (!(r[0] && r[0].length)) {
+        callback(false, "class not found");
         return;
       }
+
       resultSet = r[0];
       resultSet[0]["members"] = r[1];
 
