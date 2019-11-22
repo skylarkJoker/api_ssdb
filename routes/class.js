@@ -169,7 +169,6 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   check("members").isArray({ min: 1 }),
-
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -177,10 +176,28 @@ router.post(
     }
     var members = req.body.members;
     members["class_id"] = req.session.class_id;
-    classController.addAttendanceRecords(members, (err, r) => {
-      if (err) return res.status(422).send("Error creating records");
+    classController.addAttendanceRecords(
+      members,
+      req.body.overwrite,
+      (err, r) => {
+        if (err) return res.status(422).send("Error creating records");
 
-      res.status(200).send("Records created: " + r);
+        res.status(200).send("Records created: " + r);
+      }
+    );
+  }
+);
+
+router.get(
+  "/checkattendance",
+  authCheck.sessionChecker,
+  authCheck.levelCheck(authCheck.accessLevel.clead),
+
+  (req, res) => {
+    classController.checkAttendance((err, r) => {
+      if (err) return res.status(422).send("Error checking records");
+
+      res.status(200).send(r);
     });
   }
 );

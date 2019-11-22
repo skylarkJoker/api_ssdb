@@ -305,7 +305,7 @@ module.exports.deleteClass = (class_id, callback) => {
   });
 };
 
-module.exports.addAttendanceRecords = (members, callback) => {
+module.exports.addAttendanceRecords = (members, overwrite, callback) => {
   let post = [];
   members.forEach(member => {
     post.push([member.id, members.class_id, member.status, member.studied]);
@@ -328,6 +328,28 @@ module.exports.addAttendanceRecords = (members, callback) => {
           return;
         }
         callback(false, r.affectedRows + " row(s) inserted");
+      }
+    );
+  });
+};
+
+module.exports.checkAttendance = callback => {
+  db.pool.getConnection((err, conn) => {
+    if (err) {
+      console.log(err);
+      callback(true);
+      return;
+    }
+    conn.query(
+      "SELECT ssdb.attendance.id FROM ssdb.attendance WHERE date(ssdb.attendance.date) = date(now())",
+      (err, r, f) => {
+        conn.release();
+        if (err) {
+          console.log(err);
+          callback(true);
+          return;
+        }
+        callback(false, r);
       }
     );
   });
