@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "/static/css/main.cc9210bc.chunk.css",
+    "main.js": "/static/js/main.762417cd.chunk.js",
+    "main.js.map": "/static/js/main.762417cd.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.60e01115.js",
+    "runtime-main.js.map": "/static/js/runtime-main.60e01115.js.map",
+    "static/js/2.883c00a5.chunk.js": "/static/js/2.883c00a5.chunk.js",
+    "static/js/2.883c00a5.chunk.js.map": "/static/js/2.883c00a5.chunk.js.map",
+    "index.html": "/index.html",
+    "precache-manifest.89f36bb80f5b1aa6fd2d630196c6c7c2.js": "/precache-manifest.89f36bb80f5b1aa6fd2d630196c6c7c2.js",
+    "service-worker.js": "/service-worker.js",
+    "static/css/main.cc9210bc.chunk.css.map": "/static/css/main.cc9210bc.chunk.css.map",
+    "static/media/back.svg": "/static/media/back.48ca8b50.svg",
+    "static/media/back_white.svg": "/static/media/back_white.fbff8f05.svg",
+    "static/media/file.svg": "/static/media/file.c1ed482c.svg",
+    "static/media/menu.svg": "/static/media/menu.24e6ce03.svg",
+    "static/media/ssdb.svg": "/static/media/ssdb.be6e6a3a.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.60e01115.js",
+    "static/js/2.883c00a5.chunk.js",
+    "static/css/main.cc9210bc.chunk.css",
+    "static/js/main.762417cd.chunk.js"
+  ]
+}

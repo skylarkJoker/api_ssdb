@@ -11,8 +11,7 @@ var db = require("./controller/db");
 const app = express();
 const port = 3002;
 var MySQLStore = require("express-mysql-session")(session);
-var authCheck = require("./routes/mdware");
-var classController = require("./controller/class");
+const path = require("path");
 
 var dotenv = require("dotenv");
 dotenv.config();
@@ -43,6 +42,7 @@ var sessionOps = {
     domain: "localhost"
   }
 };
+app.use(express.static(path.join(__dirname, "client/build")));
 
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -71,8 +71,8 @@ app.use("/members", members);
 app.use("/class", sbclass);
 
 //test route
-app.post("/", (req, res) => {
-  res.send(true);
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/build", "index.html"));
 });
 
 app.listen(port, () => console.log(`SSDB app listening on port ${port}!`));
