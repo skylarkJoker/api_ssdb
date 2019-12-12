@@ -1,89 +1,56 @@
 const crypt = require("bcrypt");
-var db = require("./db");
-
-getUser = (username, callback) => {
-  let query = `
-    SELECT 
-    ssdb.membership.member_id,
-      ssdb.membership.class_id,
-      ssdb.auth.password,
-      ssdb.auth.level
-  FROM 
-    ssdb.membership 
-  INNER JOIN
-    ssdb.auth
-  ON
-    ssdb.auth.member_id=ssdb.membership.member_id
-  WHERE 
-    ssdb.auth.username = ? 
-    `;
-
-  db.pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-      callback(true);
-      return;
-    }
-    conn.query(query, [username], (err, r) => {
-      conn.release();
-      if (err) {
-        console.log(err);
-        callback(true);
-        return;
-      }
-      callback(false, r);
-    });
-  });
-};
+const db = require('../models');
+const Member = db.Member;
+const Account = db.Account;
 
 module.exports.authenticate = (username, password, callback) => {
-  getUser(username, (err, r) => {
-    if (err) {
-      console.log(err);
-    }
-    if (r && r.length) {
-      crypt.compare(password, r[0].password, (err, res) => {
+  Account.findOne({
+    where: {
+      username: username
+    },
+    include: [{
+      model: Member
+    }]
+  }).then(result => {
+    if (result) {
+      var account = result.get({
+        plain: true
+      })
+      crypt.compare(password, account.password, (err, res) => {
         if (err) {
           console.log(err);
           callback(true);
           return;
         } else if (res) {
           var userData = {
-            member_id: r[0].member_id,
-            class_id: r[0].class_id,
-            level: r[0].level
+            member_id: account.MemberId,
+            class_id: account.SbClassId,
+            level: account.level
           };
           callback(false, userData);
         } else {
           callback(true, "incorrect password");
         }
       });
-    } else {
-      console.log("user not found");
-      callback(true);
-      return;
     }
-  });
+    callback(true, "no user found")
+
+  }).catch(err => {
+    callback(true, err)
+  })
 };
 
 module.exports.addUser = (username, password, member_id, callback) => {
   crypt.hash(password, 10, (err, hash) => {
-    let post = {
+    Account.create({
       username: username,
       password: hash,
+      level: 'chlead',
       member_id: member_id
-    };
-
-    db.pool.getConnection((err, conn) => {
-      conn.query("INSERT INTO ssdb.auth SET ?", post, (err, r, f) => {
-        conn.release();
-        if (err) {
-          console.log(err);
-          callback(true);
-          return;
-        }
-        callback(false, results.affectedRows + " row(s) inserted");
-      });
-    });
-  });
-};
+    }).then((account) => {
+      callback(false, account.get({
+        plain: true
+      }).username)
+    })
+  })
+}

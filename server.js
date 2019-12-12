@@ -7,14 +7,20 @@ const helmet = require("helmet");
 var auth = require("./routes/auth");
 var members = require("./routes/member");
 var sbclass = require("./routes/class");
-var db = require("./controller/db");
+var db = require("./models");
+var Church = db.Church;
+var SbClass = db.SbClass;
+var SequelizeStore = require('connect-session-sequelize')(session.Store);
 const app = express();
 const port = 3002;
-var MySQLStore = require("express-mysql-session")(session);
 const path = require("path");
 
 var dotenv = require("dotenv");
 dotenv.config();
+
+db.sequelize.sync({
+  force: true
+});
 
 var corsOptions = {
   // origin: "http://localhost:3000",
@@ -22,14 +28,18 @@ var corsOptions = {
   credentials: true
 };
 
-var sessionStore = new MySQLStore(
-  {
-    clearExpired: true,
-    checkExpirationInterval: 60 * 1000 * 5,
-    expiration: 60 * 1000 * 10
-  },
-  db.pool
-);
+
+db.sequelize.authenticate().then(() => {
+  console.log("Success");
+}).catch(err => {
+  console.error("No conn", err);
+})
+
+var sessionStore = new SequelizeStore({
+  db: db.sequelize,
+  checkExpirationInterval: 60 * 1000 * 5,
+  expiration: 60 * 1000 * 10
+})
 var sessionOps = {
   secret: process.env.SECRET,
   name: "blitz",
@@ -42,6 +52,9 @@ var sessionOps = {
     domain: "localhost"
   }
 };
+
+sessionStore.sync();
+
 app.use(express.static(path.join(__dirname, "client/build")));
 
 app.use(bodyParser.json());
@@ -69,6 +82,16 @@ app.use("/members", members);
 
 //class function routes
 app.use("/class", sbclass);
+
+app.get("/test", (req, res) => {
+  Church.findAll({
+    include: [{
+      model: SbClass
+    }],
+  }).then((account) => {
+    res.send(account);
+  })
+})
 
 //test route
 app.get("*", (req, res) => {
