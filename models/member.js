@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     Member.hasOne(models.Account)
     Member.hasMany(models.Attendance)
     Member.belongsTo(models.SbClass)
+    Member.belongsTo(models.Church)
   };
   return Member;
 };

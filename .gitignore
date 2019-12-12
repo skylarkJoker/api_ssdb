@@ -41,3 +41,9 @@ db/Dump20191105/ssdb_member.sql
 db/Dump20191105/ssdb_membership.sql
 db/Dump20191105/ssdb_sbclass.sql
 ssdb.postman_collection.json
+seeders/bckup.sql
+seeders/churches.csv
+seeders/churches.sql
+seeders/members.csv
+seeders/members.sql
+seeders/sbclasses.sql

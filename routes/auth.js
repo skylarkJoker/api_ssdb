@@ -30,12 +30,13 @@ router.post(
       req.body.password,
       (err, userData) => {
         if (err) {
-          res.status(422).send("Unable to login");
+          res.status(422).send(userData);
         } else {
           req.session.member_id = userData.member_id;
           req.session.class_id = userData.class_id;
           req.session.level = userData.level;
           res.status(200).send("Successfully logged in");
+
         }
       }
     );
@@ -44,13 +45,10 @@ router.post(
 
 router.post(
   "/adduser",
-  // authCheck.sessionChecker,
-  // authCheck.levelCheck(authCheck.accessLevel.admin),
+  authCheck.sessionChecker,
+  authCheck.levelCheck(authCheck.accessLevel.admin),
   check("username").exists(),
   check("password").exists(),
-  check("member_id")
-  .exists()
-  .isInt(),
 
   (req, res) => {
     const errors = validationResult(req);

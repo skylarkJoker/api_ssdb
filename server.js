@@ -18,9 +18,9 @@ const path = require("path");
 var dotenv = require("dotenv");
 dotenv.config();
 
-db.sequelize.sync({
-  force: true
-});
+// db.sequelize.sync({
+//   force: true
+// });
 
 var corsOptions = {
   // origin: "http://localhost:3000",

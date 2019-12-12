@@ -8,9 +8,9 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4
     },
     name: DataTypes.STRING,
-    teacher: DataTypes.INTEGER,
-    secretary: DataTypes.INTEGER,
-    care_coordinator: DataTypes.INTEGER,
+    teacher: DataTypes.UUID,
+    secretary: DataTypes.UUID,
+    care_coordinator: DataTypes.UUID,
     division: DataTypes.STRING
   }, {});
   SbClass.associate = function (models) {

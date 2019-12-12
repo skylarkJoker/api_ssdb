@@ -12,28 +12,26 @@ module.exports.authenticate = (username, password, callback) => {
       model: Member
     }]
   }).then(result => {
+
     if (result) {
       var account = result.get({
         plain: true
       })
       crypt.compare(password, account.password, (err, res) => {
-        if (err) {
-          console.log(err);
-          callback(true);
-          return;
-        } else if (res) {
+        if (res) {
           var userData = {
-            member_id: account.MemberId,
-            class_id: account.SbClassId,
+            member_id: account.Member.id,
+            class_id: account.Member.SbClassId,
             level: account.level
           };
           callback(false, userData);
         } else {
-          callback(true, "incorrect password");
+          callback(true, "Incorrect Password");
         }
       });
+    } else {
+      callback(true, "User not found")
     }
-    callback(true, "no user found")
 
   }).catch(err => {
     callback(true, err)
@@ -46,7 +44,7 @@ module.exports.addUser = (username, password, member_id, callback) => {
       username: username,
       password: hash,
       level: 'chlead',
-      member_id: member_id
+      MemberId: member_id
     }).then((account) => {
       callback(false, account.get({
         plain: true

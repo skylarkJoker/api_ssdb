@@ -1,7 +1,10 @@
 var express = require("express");
 var router = express.Router();
 var classController = require("../controller/class");
-const { check, validationResult } = require("express-validator");
+const {
+  check,
+  validationResult
+} = require("express-validator");
 var authCheck = require("./mdware");
 
 router.post(
@@ -11,7 +14,9 @@ router.post(
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
+      return res.status(422).json({
+        errors: errors.array()
+      });
     }
     classController.readClassMembers(req.session.class_id, (err, r) => {
       if (err) return res.status(422).send("Error getting members");
@@ -44,7 +49,7 @@ router.post(
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
     classController.readMembersNoClass(req.session.class_id, (err, r) => {
-      if (err) return res.status(422).send("Error retrieving members");
+      if (err) return res.status(422).send(r);
 
       res.status(200).json(r);
     });
@@ -58,22 +63,21 @@ router.post(
   authCheck.levelCheck(authCheck.accessLevel.chlead),
   check("name").exists(),
   check("division")
-    .exists()
-    .isIn(["adult", "youth"]),
-  check("church_id")
-    .exists()
-    .isInt(),
+  .exists()
+  .isIn(["adult", "youth"]),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
+      return res.status(422).json({
+        errors: errors.array()
+      });
     }
     classController.createClass(
       req.body.name,
       req.body.division,
       req.body.church_id,
       (err, r) => {
-        if (err) return res.status(422).send("Error creating class");
+        if (err) return res.status(422).send(r);
 
         res.status(200).send("Class created: " + r);
       }
@@ -86,12 +90,14 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   check("class_id")
-    .exists()
-    .isInt(),
+  .exists()
+  .isInt(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
+      return res.status(422).json({
+        errors: errors.array()
+      });
     }
     classController.readClassInfo(req.body.class_id, (err, r) => {
       if (err) return res.status(422).send("Error getting class");
@@ -107,7 +113,7 @@ router.post(
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
     classController.readClassInfo(req.session.class_id, (err, r) => {
-      if (err) return res.status(422).send("Error getting class");
+      if (err) return res.status(422).send(r);
       res.status(200).json(r);
     });
   }
@@ -118,23 +124,25 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.chlead),
   check("sbclass.name")
-    .exists()
-    .not()
-    .isEmpty(),
+  .exists()
+  .not()
+  .isEmpty(),
   check("sbclass.division")
-    .exists()
-    .isIn(["adult", "youth"]),
+  .exists()
+  .isIn(["adult", "youth"]),
   check("sbclass.teacher").exists(),
   check("sbclass.care_coordinator").exists(),
   check("sbclass.secretary").exists(),
   check("sbclass.class_id")
-    .exists()
-    .not()
-    .isEmpty(),
+  .exists()
+  .not()
+  .isEmpty(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
+      return res.status(422).json({
+        errors: errors.array()
+      });
     }
     classController.updateClass(req.body.sbclass, (err, r) => {
       if (err) return res.status(422).send("Error updating class");
@@ -149,12 +157,14 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.chlead),
   check("class_id")
-    .exists()
-    .isInt(),
+  .exists()
+  .isInt(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
+      return res.status(422).json({
+        errors: errors.array()
+      });
     }
     classController.deleteClass(req.body.class_id, (err, r) => {
       if (err) return res.status(422).send("Error deleting class");
@@ -168,11 +178,15 @@ router.post(
   "/addrecords",
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
-  check("members").isArray({ min: 1 }),
+  check("members").isArray({
+    min: 1
+  }),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
+      return res.status(422).json({
+        errors: errors.array()
+      });
     }
     var members = req.body.members;
     members["class_id"] = req.session.class_id;

@@ -1,167 +1,88 @@
-var db = require("./db");
+var db = require("../models");
+var SbClass = db.SbClass;
+var Member = db.Member;
+var Church = db.Church;
+var Op = db.Sequelize.Op;
 
 module.exports.readClassMembers = (class_id, callback) => {
-  let query =
-    `
-    SELECT
-    ssdb.member.id,
-    ssdb.member.first_name,
-    ssdb.member.last_name,
-    ssdb.member.address,
-    ssdb.member.phone_home,
-    ssdb.member.email
-   FROM
-    ssdb.member 
-   INNER JOIN
-       ssdb.membership ON ssdb.membership.member_id=ssdb.member.id
-   WHERE 
-       ssdb.membership.class_id = ` +
-    class_id +
-    ` 
-    `;
-  db.pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-      callback(true);
-      return;
+  Member.findAll({
+    where: {
+      SbClassId: class_id
     }
-    conn.query(query, (err, r, f) => {
-      conn.release();
-      if (err) {
-        console.log(err);
-        callback(true);
-        return;
-      }
-      callback(false, r);
-    });
-  });
+  }).then((members) => {
+    if (members && members.length) {
+      callback(false, members)
+    } else {
+      callback(true);
+    }
+  })
 };
 
 module.exports.updateMembership = (members, class_id, callback) => {
-  let query = `
-  UPDATE
-	  ssdb.membership
-  SET
-	  ssdb.membership.class_id = ?
-  WHERE 
-	  ssdb.membership.member_id IN ?; 
- `;
-
-  db.pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-      callback(true);
-      return;
-    }
-    conn.query(query, [class_id, [members]], (err, r, f) => {
-      conn.release();
-      if (err) {
-        console.log(err);
-        callback(true);
-        return;
+  Member.update({
+    SbClassId: class_id
+  }, {
+    where: {
+      id: {
+        [Op.in]: members
       }
-      callback(false, r.affectedRows + "row(s) updated");
-    });
-  });
+    }
+  }).then(([affectedCount, affectedRows]) => {
+    callback(false, affectedCount + " Membership(s) changed")
+  })
+
 };
 
 module.exports.readMembersNoClass = (class_id, callback) => {
-  let query =
-    `SELECT ssdb.church_class.church_id FROM ssdb.church_class WHERE ssdb.church_class.class_id =` +
-    class_id;
-  db.pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-      callback(true);
-      return;
-    }
-
-    conn.query(query, (err, r, f) => {
-      if (err) {
-        console.log(err);
-        callback(true);
-        return;
-      }
-
-      query =
-        `
-        SELECT
-        ssdb.member.id,
-        ssdb.member.first_name,
-        ssdb.member.last_name,
-        ssdb.member.address,
-        ssdb.member.phone_home,
-        ssdb.member.email
-       FROM
-        ssdb.member
-       INNER JOIN
-           ssdb.membership ON ssdb.membership.member_id=ssdb.member.id
-       WHERE
-           ssdb.membership.church_id = ` +
-        r[0].church_id +
-        `
-      AND
-        ssdb.membership.class_id IS NULL
-        `;
-
-      conn.query(query, (err, r, f) => {
-        conn.release();
-        if (err) {
-          console.log(err);
-          callback(true);
-          return;
+  Church.findOne({
+      attributes: [],
+      include: [{
+        model: SbClass,
+        attributes: [],
+        where: {
+          id: class_id
         }
-        callback(false, r);
-      });
-    });
-  });
+      }, {
+        model: Member,
+        where: {
+          SbClassId: null
+        }
+      }]
+    })
+    .then((members) => {
+      callback(false, members);
+    }).catch(err => {
+      callback(true, err);
+    })
 };
 
 module.exports.createClass = (name, division, church_id, callback) => {
-  let post = {
+  SbClass.create({
     name: name,
-    division: division
-  };
-  db.pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-      callback(true);
-      return;
-    }
-    conn.query("INSERT INTO ssdb.sbclass SET ?", post, (err, r, f) => {
-      conn.release();
-      if (err) {
-        console.log(err);
-        callback(true);
-        return;
-      }
-      post = {
-        class_id: r.insertId,
-        church_id: church_id
-      };
+    division: division,
+    ChurchId: church_id
+  }).then(() => {
+    callback(false, name + " has been created");
+  }).catch((err) => {
+    console.log(err);
 
-      conn.query("INSERT INTO ssdb.church_class SET ?", post, (err, r, f) => {
-        conn.release();
-        if (err) {
-          conn.query(
-            "DELETE FROM ssdb.sbclass WHERE ssdb.sbclass.class_id = ?",
-            [r.insertId],
-            (err, r, f) => {
-              conn.release();
-            }
-          );
-          console.log(err);
-          callback(true);
-          return;
-        }
-
-        callback(false, r.affectedRows + "row(s) inserted");
-      });
-    });
-  });
+    callback(true, err)
+  })
 };
 //prevent if no members added yet
 module.exports.readClassInfo = (class_id, callback) => {
+  SbClass.findOne({
+    where: {
+      id: class_id
+    },
+    include: [{
+      model: Member
+    }, ]
+  }).then(sbclass => {
+    callback(false, sbclass)
+  }).catch(err => {
+    callback(true, err)
+  })
   let query =
     `
     SELECT 
@@ -212,36 +133,6 @@ module.exports.readClassInfo = (class_id, callback) => {
     class_id +
     ` 
     `;
-  var resultSet = [];
-  db.pool.getConnection((err, conn) => {
-    if (err) {
-      console.log(err);
-      callback(true);
-      return;
-    }
-    conn.query({ sql: query + ";" + query2, timeout: 5000 }, (err, r, f) => {
-      conn.release();
-
-      if (err && err.code === "PROTOCOL_SEQUENCE_TIMEOUT") {
-        console.log(err);
-        callback(true);
-        return;
-      } else if (err) {
-        console.log(err);
-        callback(true);
-        return;
-      }
-      if (!(r[0] && r[0].length)) {
-        callback(false, "class not found");
-        return;
-      }
-
-      resultSet = r[0];
-      resultSet[0]["members"] = r[1];
-
-      callback(false, resultSet);
-    });
-  });
 };
 
 module.exports.updateClass = (sbclass, callback) => {
