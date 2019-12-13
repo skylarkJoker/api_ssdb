@@ -1,36 +1,33 @@
 var express = require("express");
 var router = express.Router();
 var memberController = require("../controller/member");
-const {
-  check,
-  validationResult
-} = require("express-validator");
+const { check, validationResult } = require("express-validator");
 var authCheck = require("./mdware");
 
 router.post(
   "/create",
   check("member.first_name")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.last_name")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.address")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.phone")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.email")
-  .optional({
-    nullable: true,
-    checkFalsy: true
-  })
-  .isEmail(),
+    .optional({
+      nullable: true,
+      checkFalsy: true
+    })
+    .isEmail(),
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
@@ -55,8 +52,7 @@ router.post(
 //returns array of containing member
 router.post(
   "/read",
-  check("id")
-  .exists(),
+  check("id").exists(),
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
@@ -76,27 +72,27 @@ router.post(
 router.post(
   "/update",
   check("member.first_name")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.last_name")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.address")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.phone")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("member.email")
-  .optional({
-    nullable: true,
-    checkFalsy: true
-  })
-  .isEmail(),
+    .optional({
+      nullable: true,
+      checkFalsy: true
+    })
+    .isEmail(),
   check("member.id").exists(),
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
@@ -108,9 +104,10 @@ router.post(
       });
     }
     memberController.updateMember(req.body.member, (err, r) => {
-      if (err) return res.status(422).json({
-        errors: errors.array()
-      });
+      if (err)
+        return res.status(422).json({
+          errors: errors.array()
+        });
       res.status(200).send("Member updated: " + r);
     });
   }
@@ -118,9 +115,7 @@ router.post(
 //just sets membership to null to remove from class. also intended for reassignment
 router.post(
   "/delete",
-  check("id")
-  .exists()
-  .isInt(),
+  check("id").exists(),
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
@@ -131,9 +126,7 @@ router.post(
       });
     }
     memberController.deleteMember(req.body.id, (err, r) => {
-      if (err) return res.status(422).json({
-        errors: errors.array()
-      });
+      if (err) return res.status(422).json(r);
       res.status(200).send(r);
     });
   }

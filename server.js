@@ -10,7 +10,7 @@ var sbclass = require("./routes/class");
 var db = require("./models");
 var Church = db.Church;
 var SbClass = db.SbClass;
-var SequelizeStore = require('connect-session-sequelize')(session.Store);
+var SequelizeStore = require("connect-session-sequelize")(session.Store);
 const app = express();
 const port = 3002;
 const path = require("path");
@@ -134,18 +134,20 @@ var corsOptions = {
   credentials: true
 };
 
-
-db.sequelize.authenticate().then(() => {
-  console.log("Success");
-}).catch(err => {
-  console.error("No conn", err);
-})
+db.sequelize
+  .authenticate()
+  .then(() => {
+    console.log("Success");
+  })
+  .catch(err => {
+    console.error("No conn", err);
+  });
 
 var sessionStore = new SequelizeStore({
   db: db.sequelize,
   checkExpirationInterval: 60 * 1000 * 5,
   expiration: 60 * 1000 * 10
-})
+});
 var sessionOps = {
   secret: process.env.SECRET,
   name: "blitz",
@@ -169,7 +171,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(session(sessionOps));
 app.use((req, res, next) => {
-  if (req.cookies.blitz && !req.session.member_id) {
+  if (req.cookies.blitz && !req.session.id) {
     res.clearCookie("blitz");
   }
   next();
@@ -191,13 +193,15 @@ app.use("/class", sbclass);
 
 app.get("/test", (req, res) => {
   Church.findAll({
-    include: [{
-      model: SbClass
-    }],
-  }).then((account) => {
+    include: [
+      {
+        model: SbClass
+      }
+    ]
+  }).then(account => {
     res.send(account);
-  })
-})
+  });
+});
 
 //test route
 app.get("*", (req, res) => {
