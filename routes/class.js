@@ -18,8 +18,8 @@ router.post(
         errors: errors.array()
       });
     }
-    classController.readClassMembers(req.session.class_id, (err, r) => {
-      if (err) return res.status(422).send("Error getting members");
+    classController.readClassMembers(req.session.SbClassId, (err, r) => {
+      if (err) return res.status(422).send(r);
 
       res.status(200).json(r);
     });
@@ -33,7 +33,7 @@ router.post(
   (req, res) => {
     classController.updateMembership(
       req.body.members,
-      req.session.class_id,
+      req.session.SbClassId,
       (err, r) => {
         if (err) return res.status(422).send("Error updating membership");
 
@@ -48,7 +48,7 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
-    classController.readMembersNoClass(req.session.class_id, (err, r) => {
+    classController.readMembersNoClass(req.session.SbClassId, (err, r) => {
       if (err) return res.status(422).send(r);
 
       res.status(200).json(r);
@@ -75,7 +75,7 @@ router.post(
     classController.createClass(
       req.body.name,
       req.body.division,
-      req.body.church_id,
+      req.body.ChurchId,
       (err, r) => {
         if (err) return res.status(422).send(r);
 
@@ -99,7 +99,7 @@ router.post(
         errors: errors.array()
       });
     }
-    classController.readClassInfo(req.body.class_id, (err, r) => {
+    classController.readClassInfo(req.body.SbClassId, (err, r) => {
       if (err) return res.status(422).send("Error getting class");
 
       res.status(200).json(r);
@@ -112,7 +112,7 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   (req, res) => {
-    classController.readClassInfo(req.session.class_id, (err, r) => {
+    classController.readClassInfo(req.session.SbClassId, (err, r) => {
       if (err) return res.status(422).send(r);
       res.status(200).json(r);
     });
@@ -166,7 +166,7 @@ router.post(
         errors: errors.array()
       });
     }
-    classController.deleteClass(req.body.class_id, (err, r) => {
+    classController.deleteClass(req.body.SbClassId, (err, r) => {
       if (err) return res.status(422).send("Error deleting class");
 
       res.status(200).send("Class deleted: " + r);
@@ -189,7 +189,7 @@ router.post(
       });
     }
     var members = req.body.members;
-    members["class_id"] = req.session.class_id;
+    members["SbClassId"] = req.session.SbClassId;
     classController.addAttendanceRecords(
       members,
       req.body.overwrite,

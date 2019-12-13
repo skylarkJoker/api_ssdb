@@ -11,17 +11,14 @@ module.exports.authenticate = (username, password, callback) => {
     include: [{
       model: Member
     }]
-  }).then(result => {
+  }).then(account => {
 
-    if (result) {
-      var account = result.get({
-        plain: true
-      })
+    if (account) {
       crypt.compare(password, account.password, (err, res) => {
         if (res) {
           var userData = {
-            member_id: account.Member.id,
-            class_id: account.Member.SbClassId,
+            id: account.Member.id,
+            SbClassId: account.Member.SbClassId,
             level: account.level
           };
           callback(false, userData);
@@ -38,13 +35,13 @@ module.exports.authenticate = (username, password, callback) => {
   })
 };
 
-module.exports.addUser = (username, password, member_id, callback) => {
+module.exports.addUser = (username, password, id, callback) => {
   crypt.hash(password, 10, (err, hash) => {
     Account.create({
       username: username,
       password: hash,
-      level: 'chlead',
-      MemberId: member_id
+      level: 3,
+      MemberId: id
     }).then((account) => {
       callback(false, account.get({
         plain: true

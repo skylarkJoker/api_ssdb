@@ -28,13 +28,13 @@ router.post(
     authController.authenticate(
       req.body.username,
       req.body.password,
-      (err, userData) => {
+      (err, r) => {
         if (err) {
-          res.status(422).send(userData);
+          res.status(422).send(r);
         } else {
-          req.session.member_id = userData.member_id;
-          req.session.class_id = userData.class_id;
-          req.session.level = userData.level;
+          req.session.id = r.id;
+          req.session.SbClassId = r.SbClassId;
+          req.session.level = r.level;
           res.status(200).send("Successfully logged in");
 
         }
@@ -60,7 +60,7 @@ router.post(
     authController.addUser(
       req.body.username,
       req.body.password,
-      req.body.member_id,
+      req.body.id,
       (err, r) => {
         if (err) return res.status(422).json({
           errors: errors.array()

@@ -23,7 +23,7 @@ module.exports.levelCheck = level => {
 };
 
 module.exports.sessionChecker = (req, res, next) => {
-  if (req.session.member_id && req.cookies.blitz) {
+  if (req.session.id && req.cookies.blitz) {
     next();
   } else {
     res.send("Please login");

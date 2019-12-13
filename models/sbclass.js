@@ -19,6 +19,21 @@ module.exports = (sequelize, DataTypes) => {
     SbClass.hasMany(models.Guests)
     SbClass.hasMany(models.Attendance)
     SbClass.belongsTo(models.Church)
+    SbClass.belongsTo(models.Member, {
+      as: 'Teacher',
+      foreignKey: 'teacher',
+      constraints: false
+    })
+    SbClass.belongsTo(models.Member, {
+      as: 'Secretary',
+      foreignKey: 'secretary',
+      constraints: false
+    })
+    SbClass.belongsTo(models.Member, {
+      as: 'Care_Coordinator',
+      foreignKey: 'care_coordinator',
+      constraints: false
+    })
   };
   return SbClass;
 };

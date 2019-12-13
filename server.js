@@ -14,12 +14,118 @@ var SequelizeStore = require('connect-session-sequelize')(session.Store);
 const app = express();
 const port = 3002;
 const path = require("path");
+const crypt = require("bcrypt");
 
 var dotenv = require("dotenv");
 dotenv.config();
 
 // db.sequelize.sync({
 //   force: true
+// }).then(() => {
+//   db.Church.bulkCreate([{
+//       id: '153af8c2-fe18-4550-a80a-8503ce2c35c8',
+//       name: 'Magnolia',
+//       address: 'The Woods',
+//       country: 'Anatolia',
+//       createdAt: new Date(),
+//       updatedAt: new Date()
+//     },
+//     {
+//       id: '6e954601-7704-47f2-bb6e-be3e47986d47',
+//       name: 'Oak',
+//       address: 'The Ridge',
+//       country: 'Anatolia',
+//       createdAt: new Date(),
+//       updatedAt: new Date()
+//     },
+//     {
+//       id: 'e0cca5d7-00c7-4df6-812b-dac5936294ad',
+//       name: 'Pine',
+//       address: 'The Forest',
+//       country: 'Antartica',
+//       createdAt: new Date(),
+//       updatedAt: new Date()
+//     }
+//   ])
+//   SbClass.bulkCreate([{
+//       id: '138f2ef0-da3b-420e-a571-45d23714140a',
+//       name: 'Advent',
+//       division: 'adult',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       ChurchId: '153af8c2-fe18-4550-a80a-8503ce2c35c8'
+//     },
+//     {
+//       id: '2a72a9bd-9b29-4b10-9bba-c4d3c75004f9',
+//       name: 'Moon',
+//       division: 'adult',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       ChurchId: '6e954601-7704-47f2-bb6e-be3e47986d47'
+//     },
+//     {
+//       id: '74fe1ee3-0a4c-45b3-8662-2c86c7141dc4',
+//       name: 'Sun',
+//       division: 'youth',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       ChurchId: '153af8c2-fe18-4550-a80a-8503ce2c35c8'
+//     }
+//   ])
+//   db.Member.bulkCreate([{
+//       id: '907e1d3e-6633-4b26-81bc-f5e0917fb418',
+//       first_name: 'Andrew',
+//       last_name: 'Aardvark',
+//       address: 'The Estate',
+//       phone: '2687770000',
+//       email: 'aardvark@email.com',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       SbClassId: '138f2ef0-da3b-420e-a571-45d23714140a',
+//       ChurchId: '153af8c2-fe18-4550-a80a-8503ce2c35c8'
+//     },
+//     {
+//       id: '110c0565-f5c8-4b11-ac3a-95cb0c48ba3f',
+//       first_name: 'Brandon',
+//       last_name: 'Marks',
+//       address: 'The Ocho',
+//       phone: '2688880000',
+//       email: 'marks@email.com',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       SbClassId: '138f2ef0-da3b-420e-a571-45d23714140a',
+//       ChurchId: '153af8c2-fe18-4550-a80a-8503ce2c35c8'
+//     },
+//     {
+//       id: '7e3872c0-545e-49cd-8a60-7dfe0d2e3ddc',
+//       first_name: 'Charles',
+//       last_name: 'King',
+//       address: 'The Ridge',
+//       phone: '2689990000',
+//       email: 'king@email.com',
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//       SbClassId: null,
+//       ChurchId: '153af8c2-fe18-4550-a80a-8503ce2c35c8'
+//     }
+//   ]).then(() => {
+//     SbClass.update({
+//       teacher: '907e1d3e-6633-4b26-81bc-f5e0917fb418',
+//       secretary: '110c0565-f5c8-4b11-ac3a-95cb0c48ba3f',
+//       care_coordinator: '7e3872c0-545e-49cd-8a60-7dfe0d2e3ddc'
+//     }, {
+//       where: {
+//         name: 'Advent'
+//       }
+//     });
+
+//     db.Account.create({
+//       username: "aardvark",
+//       password: crypt.hashSync('ragemachine', 10),
+//       level: 3,
+//       MemberId: '907e1d3e-6633-4b26-81bc-f5e0917fb418'
+//     })
+//   })
 // });
 
 var corsOptions = {
