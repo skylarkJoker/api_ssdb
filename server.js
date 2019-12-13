@@ -208,4 +208,6 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client/build", "index.html"));
 });
 
-app.listen(port, () => console.log(`SSDB app listening on port ${port}!`));
+app.listen(process.env.PORT, () =>
+  console.log(`SSDB app listening on port ${process.env.PORT}!`)
+);
