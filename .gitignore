@@ -47,3 +47,4 @@ seeders/churches.sql
 seeders/members.csv
 seeders/members.sql
 seeders/sbclasses.sql
+seeders/test.sql
