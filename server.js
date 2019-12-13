@@ -156,8 +156,8 @@ var sessionOps = {
   store: sessionStore,
   cookie: {
     httpOnly: false,
-    secure: false,
-    domain: "localhost"
+    secure: false
+    // domain: "localhost"
   }
 };
 
