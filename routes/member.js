@@ -41,7 +41,7 @@ router.post(
     console.log(member);
 
     member["SbClassId"] = req.session.SbClassId;
-    memberController.createMember(req.body.member, (err, r) => {
+    memberController.createMember(member, (err, r) => {
       if (err) return res.status(422).send("Error creating member");
 
       res.status(200).json(r);
@@ -128,6 +128,37 @@ router.post(
     memberController.deleteMember(req.body.id, (err, r) => {
       if (err) return res.status(422).json(r);
       res.status(200).send(r);
+    });
+  }
+);
+
+router.post(
+  "/createguest",
+  check("guest.first_name")
+    .exists()
+    .not()
+    .isEmpty(),
+  check("guest.last_name")
+    .exists()
+    .not()
+    .isEmpty(),
+  authCheck.sessionChecker,
+  authCheck.levelCheck(authCheck.accessLevel.clead),
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({
+        errors: errors.array()
+      });
+    }
+    var guest = req.body.guest;
+    console.log(guest);
+
+    guest["SbClassId"] = req.session.SbClassId;
+    memberController.createGuest(guest, (err, r) => {
+      if (err) return res.status(422).send("Error adding guest");
+
+      res.status(200).json(r);
     });
   }
 );
