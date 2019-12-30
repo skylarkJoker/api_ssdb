@@ -1,12 +1,12 @@
 var db = require("../models");
 var Member = db.Member;
 var Church = db.Church;
-var Guest = db.Guest;
+var Guests = db.Guests;
 var Attendance = db.Attendance;
 var SbClass = db.SbClass;
 
 module.exports.createGuest = (guest, callback) => {
-  Guest.create({
+  Guests.create({
     first_name: guest.first_name,
     last_name: guest.last_name,
     address: guest.address,
@@ -15,6 +15,12 @@ module.exports.createGuest = (guest, callback) => {
     SbClassId: guest.SbClassId
   })
     .then(guest => {
+      Attendance.create({
+        GuestId: guest.id,
+        SbClassId: guest.SbClassId,
+        status: "present",
+        study: null
+      });
       callback(false, "Guest added");
     })
     .catch(err => {
@@ -79,6 +85,25 @@ module.exports.readMember = (id, callback) => {
     })
     .catch(err => {
       callback(true, "Member not found");
+    });
+};
+
+module.exports.readGuest = (id, callback) => {
+  Guests.findOne({
+    where: {
+      id
+    },
+    include: [
+      {
+        model: Attendance
+      }
+    ]
+  })
+    .then(guest => {
+      callback(false, guest);
+    })
+    .catch(err => {
+      callback(true, "Guest not found");
     });
 };
 

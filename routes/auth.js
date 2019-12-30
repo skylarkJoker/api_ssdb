@@ -1,22 +1,19 @@
 var express = require("express");
 var router = express.Router();
 var authController = require("../controller/auth");
-const {
-  check,
-  validationResult
-} = require("express-validator");
+const { check, validationResult } = require("express-validator");
 var authCheck = require("./mdware");
 
 router.post(
   "/login",
   check("username")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("password")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -32,11 +29,10 @@ router.post(
         if (err) {
           res.status(422).send(r);
         } else {
-          req.session.id = r.id;
+          req.session.MemberId = r.id;
           req.session.SbClassId = r.SbClassId;
           req.session.level = r.level;
           res.status(200).send("Successfully logged in");
-
         }
       }
     );
@@ -62,9 +58,10 @@ router.post(
       req.body.password,
       req.body.id,
       (err, r) => {
-        if (err) return res.status(422).json({
-          errors: errors.array()
-        });
+        if (err)
+          return res.status(422).json({
+            errors: errors.array()
+          });
         res.status(200).send("User created: " + r);
       }
     );

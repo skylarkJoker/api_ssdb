@@ -125,6 +125,11 @@ router.post(
         errors: errors.array()
       });
     }
+
+    if (req.body.id == req.session.MemberId) {
+      return res.status(422).send("Cannot remove self while logged in");
+    }
+
     memberController.deleteMember(req.body.id, (err, r) => {
       if (err) return res.status(422).json(r);
       res.status(200).send(r);

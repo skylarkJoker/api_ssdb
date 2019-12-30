@@ -1,6 +1,7 @@
 var db = require("../models");
 var SbClass = db.SbClass;
 var Member = db.Member;
+var Guests = db.Guests;
 var Attendance = db.Attendance;
 var Church = db.Church;
 var Op = db.Sequelize.Op;
@@ -10,51 +11,57 @@ module.exports.readClassMembers = (SbClassId, callback) => {
     where: {
       SbClassId
     }
-  }).then((members) => {
+  }).then(members => {
     if (members && members.length) {
-      callback(false, members)
+      callback(false, members);
     } else {
       callback(true);
     }
-  })
+  });
 };
 
 module.exports.updateMembership = (members, SbClassId, callback) => {
-  Member.update({
-    SbClassId
-  }, {
-    where: {
-      id: {
-        [Op.in]: members
+  Member.update(
+    {
+      SbClassId
+    },
+    {
+      where: {
+        id: {
+          [Op.in]: members
+        }
       }
     }
-  }).then(([affectedCount, affectedRows]) => {
-    callback(false, affectedCount + " Membership(s) changed")
-  })
-
+  ).then(([affectedCount, affectedRows]) => {
+    callback(false, affectedCount + " Membership(s) changed");
+  });
 };
 
 module.exports.readMembersNoClass = (id, callback) => {
   Church.findOne({
-      attributes: [],
-      include: [{
+    attributes: [],
+    include: [
+      {
         model: SbClass,
         attributes: [],
         where: {
           id
         }
-      }, {
+      },
+      {
         model: Member,
         where: {
           SbClassId: null
         }
-      }]
-    })
-    .then((members) => {
+      }
+    ]
+  })
+    .then(members => {
       callback(false, members);
-    }).catch(err => {
-      callback(true, err);
     })
+    .catch(err => {
+      callback(true, err);
+    });
 };
 
 module.exports.createClass = (name, division, ChurchId, callback) => {
@@ -62,13 +69,15 @@ module.exports.createClass = (name, division, ChurchId, callback) => {
     name: name,
     division: division,
     ChurchId
-  }).then(() => {
-    callback(false, name + " has been created");
-  }).catch((err) => {
-    console.log(err);
-
-    callback(true, err)
   })
+    .then(() => {
+      callback(false, name + " has been created");
+    })
+    .catch(err => {
+      console.log(err);
+
+      callback(true, err);
+    });
 };
 //prevent if no members added yet
 module.exports.readClassInfo = (id, callback) => {
@@ -76,47 +85,60 @@ module.exports.readClassInfo = (id, callback) => {
     where: {
       id
     },
-    include: [{
+    include: [
+      {
         model: Member
-      }, {
-        model: Member,
-        attributes: ['first_name', 'last_name'],
-        as: 'Teacher'
       },
       {
         model: Member,
-        attributes: ['first_name', 'last_name'],
-        as: 'Secretary'
+        attributes: ["first_name", "last_name"],
+        as: "Teacher"
       },
       {
         model: Member,
-        attributes: ['first_name', 'last_name'],
-        as: 'Care_Coordinator'
-      }
+        attributes: ["first_name", "last_name"],
+        as: "Secretary"
+      },
+      {
+        model: Member,
+        attributes: ["first_name", "last_name"],
+        as: "Care_Coordinator"
+      },
+      { model: Guests }
     ]
-  }).then(sbclass => {
-    callback(false, sbclass)
-  }).catch(err => {
-    callback(true, err)
   })
+    .then(sbclass => {
+      callback(false, sbclass);
+    })
+    .catch(err => {
+      callback(true, err);
+    });
 };
 
 module.exports.updateClass = (sbclass, callback) => {
-  SbClass.update({
-    name: sbclass.name,
-    division: sbclass.division,
-    teacher: sbclass.teacher,
-    secretary: sbclass.secretary,
-    care_coordinator: sbclass.care_coordinator
-  }, {
-    where: {
-      id: sbclass.id
+  SbClass.update(
+    {
+      name: sbclass.name,
+      division: sbclass.division,
+      teacher: sbclass.teacher,
+      secretary: sbclass.secretary,
+      care_coordinator: sbclass.care_coordinator
+    },
+    {
+      where: {
+        id: sbclass.id
+      }
     }
-  }).then(([affectedCount, affectedRows]) => {
-    callback(false, affectedCount + " Class has been updated: " + sbclass.name);
-  }).catch(err => {
-    callback(true, err)
-  })
+  )
+    .then(([affectedCount, affectedRows]) => {
+      callback(
+        false,
+        affectedCount + " Class has been updated: " + sbclass.name
+      );
+    })
+    .catch(err => {
+      callback(true, err);
+    });
 };
 
 module.exports.deleteClass = (id, callback) => {
@@ -124,11 +146,13 @@ module.exports.deleteClass = (id, callback) => {
     where: {
       id
     }
-  }).then(() => {
-    callback(false, "Class deleted")
-  }).catch(err => {
-    callback(true, "Class could not be deleted")
   })
+    .then(() => {
+      callback(false, "Class deleted");
+    })
+    .catch(err => {
+      callback(true, "Class could not be deleted");
+    });
 };
 
 module.exports.addAttendanceRecords = (members, overwrite, callback) => {
@@ -142,11 +166,13 @@ module.exports.addAttendanceRecords = (members, overwrite, callback) => {
     });
   });
 
-  Attendance.bulkCreate(post).then(() => {
-    callback(false, Attendance.findAll())
-  }).catch(err => {
-    callback(true, "Error updating attendance")
-  })
+  Attendance.bulkCreate(post)
+    .then(() => {
+      callback(false, Attendance.findAll());
+    })
+    .catch(err => {
+      callback(true, "Error updating attendance");
+    });
 };
 
 module.exports.checkAttendance = callback => {};
