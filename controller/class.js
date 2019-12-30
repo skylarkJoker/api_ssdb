@@ -2,6 +2,7 @@ var db = require("../models");
 var SbClass = db.SbClass;
 var Member = db.Member;
 var Guests = db.Guests;
+var Saved = db.Saved;
 var Attendance = db.Attendance;
 var Church = db.Church;
 var Op = db.Sequelize.Op;
@@ -155,24 +156,83 @@ module.exports.deleteClass = (id, callback) => {
     });
 };
 
-module.exports.addAttendanceRecords = (members, overwrite, callback) => {
+module.exports.addAttendanceRecords = (
+  members,
+  saved,
+  SbClassId,
+  overwrite,
+  callback
+) => {
   let post = [];
   members.forEach(member => {
     post.push({
       MemberId: member.id,
-      SbClassId: members.SbClassId,
+      SbClassId,
       status: member.status,
       study: member.studied
     });
   });
 
-  Attendance.bulkCreate(post)
-    .then(() => {
-      callback(false, Attendance.findAll());
-    })
-    .catch(err => {
-      callback(true, "Error updating attendance");
+  if (overwrite) {
+    Attendance.destroy({
+      where: {
+        createdAt: {
+          [Op.lt]: new Date(),
+          [Op.gt]: new Date(new Date() - 24 * 60 * 60 * 1000)
+        }
+      }
+    }).then(() => {
+      Attendance.bulkCreate(post)
+        .then(() => {
+          callback(false, Attendance.findAll());
+        })
+        .catch(err => {
+          callback(true, "Error updating attendance");
+        });
     });
+
+    Saved.destroy({
+      where: {
+        createdAt: {
+          [Op.lt]: new Date(),
+          [Op.gt]: new Date(new Date() - 24 * 60 * 60 * 1000)
+        }
+      }
+    }).then(() => {
+      Saved.create({
+        saved,
+        SbClassId
+      });
+    });
+  } else {
+    Attendance.bulkCreate(post)
+      .then(() => {
+        callback(false, Attendance.findAll());
+      })
+      .catch(err => {
+        callback(true, "Error updating attendance");
+      });
+
+    Saved.create({
+      saved,
+      SbClassId
+    });
+  }
 };
 
-module.exports.checkAttendance = callback => {};
+module.exports.checkAttendance = callback => {
+  Attendance.findAll({
+    where: {
+      createdAt: {
+        [Op.lt]: new Date(),
+        [Op.gt]: new Date(new Date() - 24 * 60 * 60 * 1000)
+      }
+    }
+  })
+    .then(records => {
+      callback(false, records);
+    })
+    .catch(err => {
+      callback(true, err);
+    });
+};

@@ -1,10 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var classController = require("../controller/class");
-const {
-  check,
-  validationResult
-} = require("express-validator");
+const { check, validationResult } = require("express-validator");
 var authCheck = require("./mdware");
 
 router.post(
@@ -63,8 +60,8 @@ router.post(
   authCheck.levelCheck(authCheck.accessLevel.chlead),
   check("name").exists(),
   check("division")
-  .exists()
-  .isIn(["adult", "youth"]),
+    .exists()
+    .isIn(["adult", "youth"]),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -90,8 +87,8 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.clead),
   check("class_id")
-  .exists()
-  .isInt(),
+    .exists()
+    .isInt(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -124,19 +121,19 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.chlead),
   check("sbclass.name")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   check("sbclass.division")
-  .exists()
-  .isIn(["adult", "youth"]),
+    .exists()
+    .isIn(["adult", "youth"]),
   check("sbclass.teacher").exists(),
   check("sbclass.care_coordinator").exists(),
   check("sbclass.secretary").exists(),
   check("sbclass.class_id")
-  .exists()
-  .not()
-  .isEmpty(),
+    .exists()
+    .not()
+    .isEmpty(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -157,8 +154,8 @@ router.post(
   authCheck.sessionChecker,
   authCheck.levelCheck(authCheck.accessLevel.chlead),
   check("class_id")
-  .exists()
-  .isInt(),
+    .exists()
+    .isInt(),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -192,6 +189,8 @@ router.post(
     members["SbClassId"] = req.session.SbClassId;
     classController.addAttendanceRecords(
       members,
+      req.body.saved,
+      req.session.SbClassId,
       req.body.overwrite,
       (err, r) => {
         if (err) return res.status(422).send("Error creating records");
